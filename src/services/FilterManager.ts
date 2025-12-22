@@ -10,7 +10,30 @@ export class FilterManager {
     private _onDidChangeFilters: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
     readonly onDidChangeFilters: vscode.Event<void> = this._onDidChangeFilters.event;
 
-    constructor() { }
+    constructor() {
+        this.initDefaultFilters();
+    }
+
+    private initDefaultFilters(): void {
+        const featuredGroup = this.addGroup('Presets', true);
+        featuredGroup.isEnabled = true;
+
+        this.addFilter(
+            featuredGroup.id,
+            '^\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d{3}',
+            'include',
+            true,
+            'Logcat style'
+        );
+
+        this.addFilter(
+            featuredGroup.id,
+            '^\\s*\\d+\\s+\\d+\\s+[a-zA-Z_]\\S*\\s+\\S+\\s+-?\\d+',
+            'include',
+            true,
+            'Process Info'
+        );
+    }
 
     public getGroups(): FilterGroup[] {
         return this.groups;
