@@ -182,4 +182,26 @@ export class FilterManager {
             }
         }
     }
+
+    public moveFilter(groupId: string, activeFilterId: string, targetFilterId: string, position: 'before' | 'after'): void {
+        const group = this.groups.find(g => g.id === groupId);
+        if (group) {
+            const activeIndex = group.filters.findIndex(f => f.id === activeFilterId);
+            const targetIndex = group.filters.findIndex(f => f.id === targetFilterId);
+
+            if (activeIndex !== -1 && targetIndex !== -1 && activeIndex !== targetIndex) {
+                const [activeFilter] = group.filters.splice(activeIndex, 1);
+
+                // If we removed an item before the target, the target index shifts down by 1
+                let newTargetIndex = group.filters.findIndex(f => f.id === targetFilterId);
+
+                if (position === 'after') {
+                    newTargetIndex++;
+                }
+
+                group.filters.splice(newTargetIndex, 0, activeFilter);
+                this._onDidChangeFilters.fire();
+            }
+        }
+    }
 }

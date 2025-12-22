@@ -4,7 +4,7 @@ import { FilterGroup, FilterItem } from '../models/Filter';
 
 type TreeItem = FilterGroup | FilterItem;
 
-export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
+export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>, vscode.TreeDragAndDropController<TreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined | void> = new vscode.EventEmitter<TreeItem | undefined | void>();
     readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
@@ -79,6 +79,80 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
             return element.filters.filter(f => this.mode === 'regex' ? f.isRegex : !f.isRegex);
         }
         return [];
+    }
+
+    dropMimeTypes = ['application/vnd.code.tree.loglens-filters'];
+    dragMimeTypes = ['application/vnd.code.tree.loglens-filters'];
+
+    public handleDrag(source: readonly TreeItem[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): void | Thenable<void> {
+        if (token.isCancellationRequested) {
+            return;
+        }
+
+        const item = source[0];
+        if (!this.isGroup(item)) {
+            dataTransfer.set('application/vnd.code.tree.loglens-filters', new vscode.DataTransferItem(item));
+        }
+    }
+
+    public handleDrop(target: TreeItem | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): void | Thenable<void> {
+        if (token.isCancellationRequested || !target) {
+            return;
+        }
+
+        const transferItem = dataTransfer.get('application/vnd.code.tree.loglens-filters');
+        if (!transferItem) {
+            return;
+        }
+
+        const activeItem = transferItem.value as FilterItem;
+        let targetItem = target;
+
+        // Cannot drop a group
+        if (this.isGroup(activeItem)) {
+            return;
+        }
+
+        const groups = this.filterManager.getGroups();
+        const activeGroup = groups.find(g => g.filters.some(f => f.id === activeItem.id));
+
+        if (!activeGroup) {
+            return;
+        }
+
+        // Case 1: Dropping on a Group
+        if (this.isGroup(targetItem)) {
+            // Must be the same group (or we could allow moving to different group here easily)
+            if (activeGroup.id !== targetItem.id) {
+                // For now, restrict to same group or allow move?
+                // The requirements didn't specify, but reordering within group is priority.
+                // If dropping on valid group, let's allow moving to it (reparenting)!
+                // But I haven't implemented cross-group move in Manager yet. 
+                // Wait, moveFilter assumes same group logic in my previous implementation:
+                // "const group = this.groups.find(g => g.id === groupId);"
+                // So I can't support cross-group move with current `moveFilter`.
+                // So I must ensure target group is the same.
+                if (targetItem.id !== activeGroup.id) {
+                    return;
+                }
+            }
+            // Move to end of list
+            this.filterManager.moveFilter(activeGroup.id, activeItem.id, activeGroup.filters[activeGroup.filters.length - 1].id, 'after');
+            return;
+        }
+
+        // Case 2: Dropping on an Item
+        const targetGroup = groups.find(g => g.filters.some(f => f.id === targetItem.id));
+
+        if (!targetGroup || activeGroup.id !== targetGroup.id) {
+            return;
+        }
+
+        if (activeItem.id === targetItem.id) {
+            return;
+        }
+
+        this.filterManager.moveFilter(activeGroup.id, activeItem.id, targetItem.id, 'after');
     }
 
     private isGroup(item: any): item is FilterGroup {

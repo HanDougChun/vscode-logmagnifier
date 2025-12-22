@@ -12,8 +12,8 @@ export function activate(context: vscode.ExtensionContext) {
 	const logProcessor = new LogProcessor();
 	const highlightService = new HighlightService(filterManager);
 
-	vscode.window.registerTreeDataProvider('loglens-filters', wordTreeDataProvider);
-	vscode.window.registerTreeDataProvider('loglens-regex-filters', regexTreeDataProvider);
+	vscode.window.createTreeView('loglens-filters', { treeDataProvider: wordTreeDataProvider, dragAndDropController: wordTreeDataProvider });
+	vscode.window.createTreeView('loglens-regex-filters', { treeDataProvider: regexTreeDataProvider, dragAndDropController: regexTreeDataProvider });
 
 	// Update highlights when active editor changes
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
