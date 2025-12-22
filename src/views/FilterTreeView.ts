@@ -43,9 +43,7 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
             item.id = element.id;
             item.description = description;
 
-            item.iconPath = element.isEnabled ?
-                (element.type === 'include' ? new vscode.ThemeIcon('eye') : new vscode.ThemeIcon('eye-closed')) :
-                new vscode.ThemeIcon('circle-slash');
+            item.iconPath = element.isEnabled ? new vscode.ThemeIcon('pass-filled') : new vscode.ThemeIcon('circle-large-outline');
             return item;
         }
     }
