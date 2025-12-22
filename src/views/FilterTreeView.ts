@@ -8,7 +8,10 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
     private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined | void> = new vscode.EventEmitter<TreeItem | undefined | void>();
     readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
-    constructor(private filterManager: FilterManager) {
+    constructor(
+        private filterManager: FilterManager,
+        private mode: 'word' | 'regex'
+    ) {
         this.filterManager.onDidChangeFilters(() => this.refresh());
     }
 
@@ -19,27 +22,27 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
     getTreeItem(element: TreeItem): vscode.TreeItem {
         if (this.isGroup(element)) {
             const item = new vscode.TreeItem(element.name, vscode.TreeItemCollapsibleState.Expanded);
-            // Context value allows package.json "when" clauses to match enabled/disabled state
             item.contextValue = element.isEnabled ? 'filterGroupEnabled' : 'filterGroupDisabled';
             item.id = element.id;
-
-            // Icon to show state visually in the tree
             item.iconPath = element.isEnabled ? new vscode.ThemeIcon('pass-filled') : new vscode.ThemeIcon('circle-large-outline');
-
-            // No command here, so clicking the row just selects it. 
-            // Toggling is done via inline buttons.
-
-            // Visual cue for enabled state
             item.description = element.isEnabled ? '(Active)' : '(Inactive)';
             return item;
         } else {
-            const item = new vscode.TreeItem(`${element.type === 'include' ? '[IN]' : '[OUT]'} ${element.keyword}`, vscode.TreeItemCollapsibleState.None);
+            let label = element.keyword;
+            let description = element.isEnabled ? '' : '(Disabled)';
+
+            if (element.isRegex) {
+                label = element.nickname || element.keyword;
+                description = element.keyword + (element.isEnabled ? '' : ' (Disabled)');
+            } else {
+                label = `${element.type === 'include' ? '[IN]' : '[OUT]'} ${element.keyword}`;
+            }
+
+            const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
             item.contextValue = element.isEnabled ? 'filterItemEnabled' : 'filterItemDisabled';
             item.id = element.id;
-            item.description = element.isEnabled ? '' : '(Disabled)';
-            // Removed toggle command from item click
+            item.description = description;
 
-            // Colorize or Icon based on type
             item.iconPath = element.isEnabled ?
                 (element.type === 'include' ? new vscode.ThemeIcon('eye') : new vscode.ThemeIcon('eye-closed')) :
                 new vscode.ThemeIcon('circle-slash');
@@ -49,14 +52,15 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
 
     getChildren(element?: TreeItem): vscode.ProviderResult<TreeItem[]> {
         if (!element) {
-            return this.filterManager.getGroups();
+            // Filter groups based on the data provider's mode
+            return this.filterManager.getGroups().filter(g => this.mode === 'regex' ? g.isRegex : !g.isRegex);
         } else if (this.isGroup(element)) {
-            return element.filters;
+            // Filter items based on the data provider's mode
+            return element.filters.filter(f => this.mode === 'regex' ? f.isRegex : !f.isRegex);
         }
         return [];
     }
 
-    // Type Guard
     private isGroup(item: any): item is FilterGroup {
         return (item as FilterGroup).filters !== undefined;
     }

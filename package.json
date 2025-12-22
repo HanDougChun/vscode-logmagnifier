@@ -61,19 +61,35 @@
       "loglens-container": [
         {
           "id": "loglens-filters",
-          "name": "Filters"
+          "name": "Word Filters",
+          "icon": "$(filter)"
+        },
+        {
+          "id": "loglens-regex-filters",
+          "name": "Regex Filters",
+          "icon": "$(regex)"
         }
       ]
     },
     "commands": [
       {
         "command": "loglens.addFilterGroup",
-        "title": "Add Filter Group",
+        "title": "Add Word Filter Group",
+        "icon": "$(add)"
+      },
+      {
+        "command": "loglens.addRegexFilterGroup",
+        "title": "Add Regex Filter Group",
         "icon": "$(add)"
       },
       {
         "command": "loglens.addFilter",
-        "title": "Add Filter",
+        "title": "Add Word Filter",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "loglens.addRegexFilter",
+        "title": "Add Regex Filter",
         "icon": "$(plus)"
       },
       {
@@ -115,20 +131,25 @@
           "group": "navigation"
         },
         {
+          "command": "loglens.addRegexFilterGroup",
+          "when": "view == loglens-regex-filters",
+          "group": "navigation"
+        },
+        {
           "command": "loglens.applyFilter",
-          "when": "view == loglens-filters",
+          "when": "view == loglens-filters || view == loglens-regex-filters",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "loglens.enableGroup",
-          "when": "view == loglens-filters && viewItem == filterGroupDisabled",
+          "when": "(view == loglens-filters || view == loglens-regex-filters) && viewItem == filterGroupDisabled",
           "group": "inline"
         },
         {
           "command": "loglens.disableGroup",
-          "when": "view == loglens-filters && viewItem == filterGroupEnabled",
+          "when": "(view == loglens-filters || view == loglens-regex-filters) && viewItem == filterGroupEnabled",
           "group": "inline"
         },
         {
@@ -137,18 +158,23 @@
           "group": "inline"
         },
         {
+          "command": "loglens.addRegexFilter",
+          "when": "view == loglens-regex-filters && viewItem =~ /filterGroup.*/",
+          "group": "inline"
+        },
+        {
           "command": "loglens.enableFilter",
-          "when": "view == loglens-filters && viewItem == filterItemDisabled",
+          "when": "(view == loglens-filters || view == loglens-regex-filters) && viewItem == filterItemDisabled",
           "group": "inline"
         },
         {
           "command": "loglens.disableFilter",
-          "when": "view == loglens-filters && viewItem == filterItemEnabled",
+          "when": "(view == loglens-filters || view == loglens-regex-filters) && viewItem == filterItemEnabled",
           "group": "inline"
         },
         {
           "command": "loglens.deleteFilter",
-          "when": "view == loglens-filters",
+          "when": "view == loglens-filters || view == loglens-regex-filters",
           "group": "inline"
         }
       ]
