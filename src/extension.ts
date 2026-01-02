@@ -241,26 +241,36 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}));
 
-	// Command: Toggle Filter Highlight Mode (Full Line vs Word)
-	context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFilterHighlightMode', (item: FilterItem) => {
+	// Command: Toggle Filter Highlight Mode
+	const toggleHighlightModeHandler = (item: FilterItem) => {
 		const groups = filterManager.getGroups();
 		let targetGroup = groups.find(g => g.filters.some(f => f.id === item.id));
 
 		if (targetGroup) {
 			filterManager.toggleFilterHighlightMode(targetGroup.id, item.id);
 		}
-	}));
+	};
+
+	context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFilterHighlightMode', toggleHighlightModeHandler));
+	context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFilterHighlightMode.word', toggleHighlightModeHandler));
+	context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFilterHighlightMode.line', toggleHighlightModeHandler));
+	context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFilterHighlightMode.full', toggleHighlightModeHandler));
 
 
 	// Command: Toggle Filter Case Sensitivity
-	context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFilterCaseSensitivity', (item: FilterItem) => {
+	// Command: Toggle Filter Case Sensitivity
+	const toggleCaseSensitivityHandler = (item: FilterItem) => {
 		const groups = filterManager.getGroups();
 		let targetGroup = groups.find(g => g.filters.some(f => f.id === item.id));
 
 		if (targetGroup) {
 			filterManager.toggleFilterCaseSensitivity(targetGroup.id, item.id);
 		}
-	}));
+	};
+
+	context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFilterCaseSensitivity', toggleCaseSensitivityHandler));
+	context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFilterCaseSensitivity.on', toggleCaseSensitivityHandler));
+	context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFilterCaseSensitivity.off', toggleCaseSensitivityHandler));
 
 	// Command: Toggle Filter Context Line (Multiple entries for dynamic icons)
 	const toggleContextLineHandler = (item: FilterItem) => {

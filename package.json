@@ -145,9 +145,29 @@
         "icon": "$(arrow-both)"
       },
       {
-        "command": "logmagnifier.toggleFilterCaseSensitivity",
-        "title": "Toggle Case Sensitivity",
+        "command": "logmagnifier.toggleFilterHighlightMode.word",
+        "title": "Toggle Highlight mode: word",
+        "icon": "$(arrow-both)"
+      },
+      {
+        "command": "logmagnifier.toggleFilterHighlightMode.line",
+        "title": "Toggle Highlight mode: line",
+        "icon": "$(arrow-both)"
+      },
+      {
+        "command": "logmagnifier.toggleFilterHighlightMode.full",
+        "title": "Toggle Highlight mode: full line",
+        "icon": "$(arrow-both)"
+      },
+      {
+        "command": "logmagnifier.toggleFilterCaseSensitivity.on",
+        "title": "Toggle Case Sensitivity: On",
         "icon": "$(case-sensitive)"
+      },
+      {
+        "command": "logmagnifier.toggleFilterCaseSensitivity.off",
+        "title": "Toggle Case Sensitivity: Off",
+        "icon": "$(preserve-case)"
       },
       {
         "command": "logmagnifier.previousMatch",
@@ -257,13 +277,28 @@
           "group": "inline@3"
         },
         {
-          "command": "logmagnifier.toggleFilterHighlightMode",
-          "when": "view == logmagnifier-filters && (viewItem == filterItemEnabled || viewItem == filterItemDisabled || viewItem =~ /filterItem(Enabled|Disabled)_cl.*/)",
+          "command": "logmagnifier.toggleFilterHighlightMode.word",
+          "when": "view == logmagnifier-filters && (viewItem == filterItemEnabled || viewItem == filterItemDisabled || viewItem =~ /filterItem(Enabled|Disabled)_cl.*/) && viewItem =~ /.*_hm0.*/",
           "group": "inline@4"
         },
         {
-          "command": "logmagnifier.toggleFilterCaseSensitivity",
-          "when": "view == logmagnifier-filters && (viewItem == filterItemEnabled || viewItem == filterItemDisabled || viewItem =~ /filterItem(Enabled|Disabled)_cl.*/)",
+          "command": "logmagnifier.toggleFilterHighlightMode.line",
+          "when": "view == logmagnifier-filters && (viewItem == filterItemEnabled || viewItem == filterItemDisabled || viewItem =~ /filterItem(Enabled|Disabled)_cl.*/) && viewItem =~ /.*_hm1.*/",
+          "group": "inline@4"
+        },
+        {
+          "command": "logmagnifier.toggleFilterHighlightMode.full",
+          "when": "view == logmagnifier-filters && (viewItem == filterItemEnabled || viewItem == filterItemDisabled || viewItem =~ /filterItem(Enabled|Disabled)_cl.*/) && viewItem =~ /.*_hm2.*/",
+          "group": "inline@4"
+        },
+        {
+          "command": "logmagnifier.toggleFilterCaseSensitivity.off",
+          "when": "view == logmagnifier-filters && (viewItem == filterItemEnabled || viewItem == filterItemDisabled || viewItem =~ /filterItem(Enabled|Disabled)_cl.*/) && viewItem =~ /.*_cs0$/",
+          "group": "inline@5"
+        },
+        {
+          "command": "logmagnifier.toggleFilterCaseSensitivity.on",
+          "when": "view == logmagnifier-filters && (viewItem == filterItemEnabled || viewItem == filterItemDisabled || viewItem =~ /filterItem(Enabled|Disabled)_cl.*/) && viewItem =~ /.*_cs1$/",
           "group": "inline@5"
         },
         {
