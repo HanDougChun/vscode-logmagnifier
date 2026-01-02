@@ -5,13 +5,17 @@ import { LogProcessor } from './services/LogProcessor';
 import { FilterGroup, FilterItem } from './models/Filter';
 import { HighlightService } from './services/HighlightService';
 import { ResultCountService } from './services/ResultCountService';
+import { Logger } from './services/Logger';
 
 export function activate(context: vscode.ExtensionContext) {
 	const filterManager = new FilterManager();
 	const wordTreeDataProvider = new FilterTreeDataProvider(filterManager, 'word');
 	const regexTreeDataProvider = new FilterTreeDataProvider(filterManager, 'regex');
 	const logProcessor = new LogProcessor();
-	const highlightService = new HighlightService(filterManager);
+	const logger = Logger.getInstance();
+	logger.info('LogMagnifier activated');
+
+	const highlightService = new HighlightService(filterManager, logger);
 	const resultCountService = new ResultCountService(filterManager);
 
 	vscode.window.createTreeView('logmagnifier-filters', { treeDataProvider: wordTreeDataProvider, dragAndDropController: wordTreeDataProvider });
@@ -20,8 +24,24 @@ export function activate(context: vscode.ExtensionContext) {
 	// Update highlights when active editor changes
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
 		if (editor) {
+			if (editor.document.uri.scheme === 'output') {
+				return;
+			}
+			const scheme = editor.document.uri.scheme;
+			const fileName = editor.document.fileName;
+			logger.info(`Active editor changed to: ${fileName} (Scheme: ${scheme})`);
+
 			highlightService.updateHighlights(editor);
 			resultCountService.updateCounts();
+		} else {
+			// Fallback for large files where activeTextEditor is undefined
+			const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+			if (activeTab && activeTab.input instanceof vscode.TabInputText) {
+				const uri = activeTab.input.uri;
+				logger.info(`Active editor changed to (Tab): ${uri.fsPath} (Scheme: ${uri.scheme})`);
+			} else {
+				logger.info('Active editor changed to: (None)');
+			}
 		}
 	}));
 
@@ -46,7 +66,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Initial highlight
 	if (vscode.window.activeTextEditor) {
-		highlightService.updateHighlights(vscode.window.activeTextEditor);
+		const editor = vscode.window.activeTextEditor;
+		const scheme = editor.document.uri.scheme;
+		const fileName = editor.document.fileName;
+		logger.info(`Initial active editor: ${fileName} (Scheme: ${scheme})`);
+
+		highlightService.updateHighlights(editor);
 		resultCountService.updateCounts();
 	}
 

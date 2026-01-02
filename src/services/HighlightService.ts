@@ -1,12 +1,16 @@
 import * as vscode from 'vscode';
 import { FilterManager } from './FilterManager';
 import { FilterItem } from '../models/Filter';
+import { Logger } from './Logger';
 
 export class HighlightService {
     // Map of color string -> DecorationType
     private decorationTypes: Map<string, vscode.TextEditorDecorationType> = new Map();
 
-    constructor(private filterManager: FilterManager) {
+    constructor(
+        private filterManager: FilterManager,
+        private logger: Logger
+    ) {
         // Initial setup if needed
     }
 
@@ -76,6 +80,9 @@ export class HighlightService {
             return;
         }
 
+        this.logger.info(`Highlighting started (Items: ${includeFilters.length})`);
+        const startTime = Date.now();
+
         const text = editor.document.getText();
 
         // Group ranges by decoration type key (color + fullLine)
@@ -142,6 +149,9 @@ export class HighlightService {
             const decorationType = this.getDecorationType(color, isFullLine);
             editor.setDecorations(decorationType, ranges);
         });
+
+        const duration = Date.now() - startTime;
+        this.logger.info(`Highlighting finished (${duration}ms)`);
     }
 
     public dispose() {

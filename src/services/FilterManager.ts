@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { FilterGroup, FilterItem, FilterType } from '../models/Filter';
+import { Logger } from './Logger';
 
 // Solarized-inspired and distinct colors for highlights
 // Solarized-inspired and distinct colors for highlights
@@ -41,7 +42,10 @@ export class FilterManager {
     private _onDidChangeFilters: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
     readonly onDidChangeFilters: vscode.Event<void> = this._onDidChangeFilters.event;
 
+    private logger: Logger;
+
     constructor() {
+        this.logger = Logger.getInstance();
         this.initDefaultFilters();
     }
 
@@ -99,6 +103,7 @@ export class FilterManager {
             isRegex
         };
         this.groups.push(newGroup);
+        this.logger.info(`Filter group added: ${name} (Regex: ${isRegex})`);
         this._onDidChangeFilters.fire();
         return newGroup;
     }
@@ -128,6 +133,7 @@ export class FilterManager {
                 contextLine: 0
             };
             group.filters.push(newFilter);
+            this.logger.info(`Filter added to group '${group.name}': ${keyword} (Type: ${type}, Regex: ${isRegex})`);
             this._onDidChangeFilters.fire();
             return newFilter;
         }
@@ -209,19 +215,25 @@ export class FilterManager {
         const group = this.groups.find(g => g.id === groupId);
         if (group) {
             group.filters = group.filters.filter(f => f.id !== filterId);
+            this.logger.info(`Filter removed from group '${group.name}': ${filterId}`);
             this._onDidChangeFilters.fire();
         }
     }
 
     public removeGroup(groupId: string): void {
-        this.groups = this.groups.filter(g => g.id !== groupId);
-        this._onDidChangeFilters.fire();
+        const group = this.groups.find(g => g.id === groupId);
+        if (group) {
+            this.groups = this.groups.filter(g => g.id !== groupId);
+            this.logger.info(`Filter group removed: ${group.name}`);
+            this._onDidChangeFilters.fire();
+        }
     }
 
     public toggleGroup(groupId: string): void {
         const group = this.groups.find(g => g.id === groupId);
         if (group) {
             group.isEnabled = !group.isEnabled;
+            this.logger.info(`Filter group '${group.name}' ${group.isEnabled ? 'enabled' : 'disabled'}`);
             this._onDidChangeFilters.fire();
         }
     }
@@ -232,6 +244,7 @@ export class FilterManager {
             const filter = group.filters.find(f => f.id === filterId);
             if (filter) {
                 filter.isEnabled = !filter.isEnabled;
+                this.logger.info(`Filter '${filter.keyword}' in group '${group.name}' ${filter.isEnabled ? 'enabled' : 'disabled'}`);
                 this._onDidChangeFilters.fire();
             }
         }
