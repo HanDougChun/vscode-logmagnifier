@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { FilterManager } from './FilterManager';
-import { FilterItem, FilterGroup } from '../models/Filter';
+import { RegexUtils } from '../utils/RegexUtils';
 
 export class ResultCountService {
     private debounceTimer: NodeJS.Timeout | undefined;
@@ -10,13 +10,38 @@ export class ResultCountService {
         this.calculateCounts();
     }
 
-    public updateCounts() {
+    public updateCounts(knownCounts?: Map<string, number>) {
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer);
         }
+
+        if (knownCounts) {
+            // If we have known counts (e.g. from Highlighter), apply immediately without debounce
+            this.applyKnownCounts(knownCounts);
+            return;
+        }
+
         this.debounceTimer = setTimeout(() => {
             this.calculateCounts();
         }, 500); // 500ms debounce
+    }
+
+    private applyKnownCounts(knownCounts: Map<string, number>) {
+        const groups = this.filterManager.getGroups();
+        const filterCounts: { filterId: string, count: number }[] = [];
+        const groupCounts: { groupId: string, count: number }[] = [];
+
+        for (const group of groups) {
+            let groupMatchCount = 0;
+            for (const filter of group.filters) {
+                const count = knownCounts.get(filter.id) || 0;
+                filterCounts.push({ filterId: filter.id, count });
+                groupMatchCount += count;
+            }
+            groupCounts.push({ groupId: group.id, count: groupMatchCount });
+        }
+
+        this.filterManager.updateResultCounts(filterCounts, groupCounts);
     }
 
     private calculateCounts() {
@@ -44,15 +69,7 @@ export class ResultCountService {
                         count = 0;
                     } else {
                         try {
-                            let regex: RegExp;
-                            if (filter.isRegex) {
-                                regex = new RegExp(filter.keyword, 'g');
-                            } else {
-                                const escapedKeyword = filter.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                                const flags = filter.caseSensitive ? 'g' : 'gi';
-                                regex = new RegExp(escapedKeyword, flags);
-                            }
-
+                            const regex = RegexUtils.create(filter.keyword, !!filter.isRegex, !!filter.caseSensitive);
                             const matches = text.match(regex);
                             count = matches ? matches.length : 0;
                         } catch (e) {

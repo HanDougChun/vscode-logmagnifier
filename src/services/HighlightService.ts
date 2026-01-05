@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { FilterManager } from './FilterManager';
 import { FilterItem } from '../models/Filter';
 import { Logger } from './Logger';
+import { RegexUtils } from '../utils/RegexUtils';
 
 export class HighlightService {
     // Map of color string -> DecorationType
@@ -66,9 +67,11 @@ export class HighlightService {
         this.decorationTypes.clear();
     }
 
-    public updateHighlights(editor: vscode.TextEditor) {
+    public updateHighlights(editor: vscode.TextEditor): Map<string, number> {
+        const matchCounts = new Map<string, number>();
+
         if (!editor) {
-            return;
+            return matchCounts;
         }
 
         const activeGroups = this.filterManager.getGroups().filter(g => g.isEnabled);
@@ -89,7 +92,7 @@ export class HighlightService {
 
         if (includeFilters.length === 0) {
             this.decorationTypes.forEach(dt => editor.setDecorations(dt, []));
-            return;
+            return matchCounts;
         }
 
         this.logger.info(`Highlighting started (Items: ${includeFilters.length})`);
@@ -123,19 +126,15 @@ export class HighlightService {
             // Ensure we have a decoration type for this combo
             this.getDecorationType(color, isFullLine);
 
-            let match;
             let regex: RegExp;
+            let count = 0;
 
             try {
-                if (filter.isRegex) {
-                    regex = new RegExp(filter.keyword, 'gi');
-                } else {
-                    const escapedKeyword = filter.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const flags = filter.caseSensitive ? 'g' : 'gi';
-                    regex = new RegExp(escapedKeyword, flags);
-                }
+                regex = RegexUtils.create(filter.keyword, !!filter.isRegex, !!filter.caseSensitive);
 
+                let match;
                 while ((match = regex.exec(text))) {
+                    count++;
                     const startPos = editor.document.positionAt(match.index);
                     const endPos = editor.document.positionAt(match.index + match[0].length);
 
@@ -149,6 +148,7 @@ export class HighlightService {
                         rangesByDeco.get(decoKey)!.push(new vscode.Range(startPos, endPos));
                     }
                 }
+                matchCounts.set(filter.id, count);
             } catch (e) {
                 // Ignore
             }
@@ -207,6 +207,8 @@ export class HighlightService {
 
         const duration = Date.now() - startTime;
         this.logger.info(`Highlighting finished (${duration}ms)`);
+
+        return matchCounts;
     }
 
     public dispose() {
