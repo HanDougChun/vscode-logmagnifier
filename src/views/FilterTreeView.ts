@@ -50,7 +50,11 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
             item.contextValue = `${element.isEnabled ? 'filterItemEnabled' : 'filterItemDisabled'}_cl${element.contextLine ?? 0}_hm${element.highlightMode ?? 0}_cs${element.caseSensitive ? 1 : 0}_col${element.color ?? 'none'}_type${element.type}`;
             item.id = element.id;
 
-            item.description = '';
+            if (element.isRegex && element.nickname) {
+                item.description = element.keyword;
+            } else {
+                item.description = '';
+            }
 
             if (element.isEnabled) {
                 if (element.type === 'exclude') {
