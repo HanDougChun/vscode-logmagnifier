@@ -4,6 +4,7 @@ import { HighlightService } from './HighlightService';
 import { ResultCountService } from './ResultCountService';
 import { LogProcessor } from './LogProcessor';
 import { Logger } from './Logger';
+import { QuickAccessProvider } from '../views/QuickAccessProvider';
 import { FilterGroup, FilterItem } from '../models/Filter';
 import { RegexUtils } from '../utils/RegexUtils';
 import * as fs from 'fs';
@@ -15,6 +16,7 @@ export class CommandManager {
         private highlightService: HighlightService,
         private resultCountService: ResultCountService,
         private logProcessor: LogProcessor,
+        private quickAccessProvider: QuickAccessProvider,
         private logger: Logger
     ) {
         this.registerCommands();
@@ -304,6 +306,11 @@ export class CommandManager {
             const config = vscode.workspace.getConfiguration('editor');
             const current = config.get<boolean>('stickyScroll.enabled');
             await config.update('stickyScroll.enabled', !current, vscode.ConfigurationTarget.Global);
+        }));
+
+        // Command: Toggle File Size Unit
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.toggleFileSizeUnit', () => {
+            this.quickAccessProvider.toggleFileSizeUnit();
         }));
     }
 

@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
 	let lastProcessedDoc: vscode.TextDocument | undefined;
 
 	// Initialize Command Manager (Handles all command registrations)
-	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, logger);
+	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, quickAccessProvider, logger);
 
 	vscode.window.createTreeView('logmagnifier-filters', { treeDataProvider: wordTreeDataProvider, dragAndDropController: wordTreeDataProvider });
 	vscode.window.createTreeView('logmagnifier-regex-filters', { treeDataProvider: regexTreeDataProvider, dragAndDropController: regexTreeDataProvider });
@@ -138,6 +138,18 @@ export function activate(context: vscode.ExtensionContext) {
 			// Ideally onDidChangeTextDocument should trigger re-highlight or invalidation.
 			// The original code only called resultCountService.updateCounts().
 			// We'll leave it as is but ensure next focus switch re-processes.
+
+			// Update Quick Access if untitled (size changes)
+			if (e.document.isUntitled) {
+				quickAccessProvider.refresh();
+			}
+		}
+	}));
+
+	// Update Quick Access when file is saved (size changes)
+	context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(doc => {
+		if (vscode.window.activeTextEditor && doc === vscode.window.activeTextEditor.document) {
+			quickAccessProvider.refresh();
 		}
 	}));
 }
