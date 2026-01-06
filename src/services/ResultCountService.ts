@@ -61,9 +61,11 @@ export class ResultCountService {
         for (const group of groups) {
             let groupMatchCount = 0;
 
+            const isGroupActive = group.isEnabled;
+
             for (const filter of group.filters) {
                 let count = 0;
-                if (group.isEnabled && filter.isEnabled && filter.keyword && filter.type === 'include') {
+                if (isGroupActive && filter.isEnabled && filter.keyword && filter.type === 'include') {
                     // Skip regex count if highlighting is disabled for regex
                     if (filter.isRegex && !enableRegexHighlight) {
                         count = 0;
