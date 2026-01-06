@@ -4,6 +4,22 @@ All notable changes to the "LogMagnifier" extension will be documented in this f
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.8.0]
+
+### Added
+- **Quick Access View**: Added new Quick Access view for utility toggles and file size display.
+- **Import/Export**: Added support for importing and exporting Word and Regex filters.
+- **File Size Display**: Display file size in Quick Access view with improved formatting.
+
+### Fixed
+- **Regex Filters**: Fixed issue where regex keyword was not displayed in filter items.
+- **Line Numbers**: Corrected behavior of line number toggle and fixed potential format issues.
+- **UI**: Standardized helper text and tooltips.
+
+### Refactored
+- **Color Presets**: Centralized and standardized color presets configuration.
+- **Settings**: Grouped Regex settings for better usability.
+
 ## [0.7.0]
 
 ### Added
