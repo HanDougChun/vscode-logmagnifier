@@ -25,46 +25,53 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "configuration": {
-      "title": "LogMagnifier",
-      "properties": {
-        "logmagnifier.regexHighlightColor": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "light": {
-                  "type": "string"
-                },
-                "dark": {
-                  "type": "string"
+    "configuration": [
+      {
+        "title": "LogMagnifier",
+        "properties": {
+          "logmagnifier.tempFilePrefix": {
+            "type": "string",
+            "default": "filtered_",
+            "description": "Prefix for the filtered temp files."
+          },
+          "logmagnifier.statusBarTimeout": {
+            "type": "number",
+            "default": 5000,
+            "description": "Duration for status bar messages in milliseconds."
+          }
+        }
+      },
+      {
+        "title": "LogMagnifier Regex",
+        "properties": {
+          "logmagnifier.regex.enableHighlight": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable highlighting for Regex filters in the editor."
+          },
+          "logmagnifier.regex.highlightColor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "light": {
+                    "type": "string"
+                  },
+                  "dark": {
+                    "type": "string"
+                  }
                 }
               }
-            }
-          ],
-          "default": "rgba(255, 255, 0, 0.3)",
-          "description": "Background color for Regex highlight. Can be a color string, a preset name (e.g. 'Red'), or an object with light/dark values."
-        },
-        "logmagnifier.tempFilePrefix": {
-          "type": "string",
-          "default": "filtered_",
-          "description": "Prefix for the filtered temp files."
-        },
-        "logmagnifier.statusBarTimeout": {
-          "type": "number",
-          "default": 5000,
-          "description": "Duration for status bar messages in milliseconds."
-        },
-        "logmagnifier.enableRegexHighlight": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable highlighting for Regex filters in the editor."
+            ],
+            "default": "rgba(255, 255, 0, 0.3)",
+            "description": "Background color for Regex highlight. Can be a color string, a preset name (e.g. 'Red'), or an object with light/dark values."
+          }
         }
       }
-    },
+    ],
     "viewsContainers": {
       "activitybar": [
         {

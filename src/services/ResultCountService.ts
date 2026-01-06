@@ -56,7 +56,7 @@ export class ResultCountService {
         const filterCounts: { filterId: string, count: number }[] = [];
         const groupCounts: { groupId: string, count: number }[] = [];
 
-        const enableRegexHighlight = vscode.workspace.getConfiguration('logmagnifier').get<boolean>('enableRegexHighlight') || false;
+        const enableRegexHighlight = vscode.workspace.getConfiguration('logmagnifier').get<boolean>('regex.enableHighlight') || false;
 
         for (const group of groups) {
             let groupMatchCount = 0;

@@ -95,7 +95,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Update highlights when configuration changes (e.g. color)
 	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
-		if (e.affectsConfiguration('logmagnifier.regexHighlightColor') || e.affectsConfiguration('logmagnifier.enableRegexHighlight')) {
+		if (e.affectsConfiguration('logmagnifier.regex.highlightColor') || e.affectsConfiguration('logmagnifier.regex.enableHighlight')) {
 			highlightService.refreshDecorationType();
 			lastProcessedDoc = undefined; // Force update
 			if (vscode.window.activeTextEditor) {
