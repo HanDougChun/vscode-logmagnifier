@@ -102,30 +102,30 @@ export class FilterManager {
     }
 
     private initDefaultFilters(): void {
-        if (this.groups.length > 0) {
-            return;
-        }
-        const featuredGroup = this.addGroup('Presets', true);
-        if (!featuredGroup) {
-            return;
-        }
-        featuredGroup.isEnabled = false;
+        const hasRegexGroups = this.groups.some(g => g.isRegex);
+        if (!hasRegexGroups) {
+            const featuredGroup = this.addGroup('Presets', true);
+            if (!featuredGroup) {
+                return;
+            }
+            featuredGroup.isEnabled = false;
 
-        this.addFilter(
-            featuredGroup.id,
-            '^\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d{3}',
-            'include',
-            true,
-            'Logcat style'
-        );
+            this.addFilter(
+                featuredGroup.id,
+                '^\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d{3}',
+                'include',
+                true,
+                'Logcat style'
+            );
 
-        this.addFilter(
-            featuredGroup.id,
-            '^\\s*\\d+\\s+\\d+\\s+[a-zA-Z_]\\S*\\s+\\S+\\s+-?\\d+',
-            'include',
-            true,
-            'Process Info'
-        );
+            this.addFilter(
+                featuredGroup.id,
+                '^\\s*\\d+\\s+\\d+\\s+[a-zA-Z_]\\S*\\s+\\S+\\s+-?\\d+',
+                'include',
+                true,
+                'Process Info'
+            );
+        }
     }
 
     public getGroups(): FilterGroup[] {
@@ -327,6 +327,12 @@ export class FilterManager {
         if (group) {
             this.groups = this.groups.filter(g => g.id !== groupId);
             this.logger.info(`Filter group removed: ${group.name}`);
+
+            // If all regex groups are gone, restore defaults
+            if (group.isRegex) {
+                this.initDefaultFilters();
+            }
+
             this.saveToState();
             this._onDidChangeFilters.fire();
         }
@@ -592,49 +598,48 @@ export class FilterManager {
             if (typeof parsedData === 'object' && parsedData !== null && Array.isArray(parsedData.groups)) {
                 // New format: Root is object with version and groups
                 importedGroups = parsedData.groups;
-                importedVersion = parsedData.version;
-                this.logger.info(`Detected import data (Version: ${importedVersion || 'unknown'}).`); // Removed "new" as it's the only one
+                this.logger.info(`Importing ${importedGroups.length} groups from JSON (File Version: ${importedVersion || 'unknown'}).`);
+
+                if (overwrite) {
+                    // Remove existing groups of the same mode
+                    this.groups = this.groups.filter(g => mode === 'regex' ? !g.isRegex : !!g.isRegex);
+                    this.logger.info(`Existing ${mode} filters cleared for overwrite.`);
+                }
+
+                let addedCount = 0;
+                for (const group of importedGroups) {
+                    // Validate group and ensure it matches the mode
+                    if (!!group.isRegex !== (mode === 'regex')) {
+                        continue;
+                    }
+
+                    // If not overwriting, we might want to ensure unique names or just append.
+                    // Usually append with a new ID is safer.
+                    const newGroupId = generateId();
+                    const newGroup: FilterGroup = {
+                        ...group,
+                        id: newGroupId,
+                        isExpanded: group.isExpanded ?? true,
+                        filters: group.filters.map(f => ({
+                            ...f,
+                            id: generateId()
+                        }))
+                    };
+
+                    this.groups.push(newGroup);
+                    addedCount++;
+                }
+
+                if (addedCount > 0) {
+                    this.saveToState();
+                    this._onDidChangeFilters.fire();
+                }
+
+                this.logger.info(`Import completed: ${addedCount} ${mode} filter groups added.`);
+                return { count: addedCount };
             } else {
                 throw new Error('Invalid filter data format: expected an object with a "groups" array. Legacy array format is no longer supported.');
             }
-
-            this.logger.info(`Importing ${importedGroups.length} groups from JSON.`);
-
-            if (overwrite) {
-                this.groups = this.groups.filter(g => mode === 'regex' ? !g.isRegex : !!g.isRegex);
-            }
-
-            let addedCount = 0;
-            for (const group of importedGroups) {
-                // Validate group and ensure it matches the mode
-                if (!!group.isRegex !== (mode === 'regex')) {
-                    continue;
-                }
-
-                // If not overwriting, we might want to ensure unique names or just append.
-                // Usually append with a new ID is safer.
-                const newGroupId = generateId();
-                const newGroup: FilterGroup = {
-                    ...group,
-                    id: newGroupId,
-                    isExpanded: group.isExpanded ?? true,
-                    filters: group.filters.map(f => ({
-                        ...f,
-                        id: generateId()
-                    }))
-                };
-
-                this.groups.push(newGroup);
-                addedCount++;
-            }
-
-            if (addedCount > 0) {
-                this.saveToState();
-                this._onDidChangeFilters.fire();
-            }
-
-            this.logger.info(`Import completed: ${addedCount} ${mode} filter groups added.`);
-            return { count: addedCount };
         } catch (e: any) {
             this.logger.error(`Import failed: ${e.message}`);
             return { count: 0, error: e.message };
