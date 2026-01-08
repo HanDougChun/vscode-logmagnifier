@@ -429,6 +429,45 @@ export class FilterManager {
         this._onDidChangeFilters.fire();
     }
 
+    public moveGroup(activeGroupId: string, targetGroupId: string | undefined, position: 'before' | 'after' | 'append'): void {
+        const activeIndex = this.groups.findIndex(g => g.id === activeGroupId);
+        if (activeIndex === -1) {
+            return;
+        }
+
+        const activeGroup = this.groups[activeIndex];
+        const targetGroup = targetGroupId ? this.groups.find(g => g.id === targetGroupId) : undefined;
+
+        // Validation: mode match
+        if (targetGroup && !!activeGroup.isRegex !== !!targetGroup.isRegex) {
+            this.logger.warn(`Cannot move group between different modes.`);
+            return;
+        }
+
+        // Remove from current position
+        this.groups.splice(activeIndex, 1);
+
+        if (!targetGroupId) {
+            // Append to end
+            this.groups.push(activeGroup);
+        } else {
+            // Find index again because splice might have shifted it
+            let targetIndex = this.groups.findIndex(g => g.id === targetGroupId);
+
+            if (targetIndex === -1) {
+                this.groups.push(activeGroup);
+            } else {
+                if (position === 'after') {
+                    targetIndex++;
+                }
+                this.groups.splice(targetIndex, 0, activeGroup);
+            }
+        }
+
+        this.saveToState();
+        this._onDidChangeFilters.fire();
+    }
+
     public exportFilters(mode: 'word' | 'regex'): string {
         const groupsToExport = this.groups
             .filter(g => mode === 'regex' ? g.isRegex : !g.isRegex)

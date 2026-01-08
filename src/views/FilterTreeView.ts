@@ -140,13 +140,11 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
         }
 
         const item = source[0];
-        if (!this.isGroup(item)) {
-            dataTransfer.set('application/vnd.code.tree.logmagnifier-filters', new vscode.DataTransferItem(item));
-        }
+        dataTransfer.set('application/vnd.code.tree.logmagnifier-filters', new vscode.DataTransferItem(item));
     }
 
     public handleDrop(target: TreeItem | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): void | Thenable<void> {
-        if (token.isCancellationRequested || !target) {
+        if (token.isCancellationRequested) {
             return;
         }
 
@@ -155,25 +153,51 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
             return;
         }
 
-        const activeItem = transferItem.value as FilterItem;
+        const activeItem = transferItem.value as TreeItem;
         let targetItem = target;
 
-        // Cannot drop a group
+        // Group Reordering
         if (this.isGroup(activeItem)) {
+            if (!targetItem) {
+                // Dropped on root -> Append to end
+                this.filterManager.moveGroup(activeItem.id, undefined, 'append');
+                return;
+            }
+
+            if (this.isGroup(targetItem)) {
+                // Dropped on another group -> Move active group after target group
+                if (activeItem.id !== targetItem.id) {
+                    this.filterManager.moveGroup(activeItem.id, targetItem.id, 'after');
+                }
+                return;
+            }
+
+            // Dropped on an item -> Ignore (Groups cannot be inside items)
             return;
         }
 
+        // Item Reordering/Moving (activeItem is FilterItem) 
+        // When we get here, activeItem is definitely NOT a group because of the check above.
+        const activeFilterItem = activeItem as FilterItem;
+
         const groups = this.filterManager.getGroups();
-        const activeGroup = groups.find(g => g.filters.some(f => f.id === activeItem.id));
+        const activeGroup = groups.find(g => g.filters.some(f => f.id === activeFilterItem.id));
 
         if (!activeGroup) {
+            return;
+        }
+
+        if (!targetItem) {
+            // Dropped on root? Items shouldn't really be dropped on root unless we want to move them to a default group?
+            // For now, ignore drops on root for items if not supported.
+            // Or maybe we treat it as "move to end of current group"? But "current group" is ambiguous.
             return;
         }
 
         // Case 1: Dropping on a Group
         if (this.isGroup(targetItem)) {
             // Move to end of list
-            this.filterManager.moveFilter(activeGroup.id, targetItem.id, activeItem.id, undefined, 'append');
+            this.filterManager.moveFilter(activeGroup.id, targetItem.id, activeFilterItem.id, undefined, 'append');
             return;
         }
 
@@ -184,11 +208,11 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
             return;
         }
 
-        if (activeItem.id === targetItem.id) {
+        if (activeFilterItem.id === targetItem.id) {
             return;
         }
 
-        this.filterManager.moveFilter(activeGroup.id, targetGroup.id, activeItem.id, targetItem.id, 'after');
+        this.filterManager.moveFilter(activeGroup.id, targetGroup.id, activeFilterItem.id, targetItem.id, 'after');
     }
 
     private isGroup(item: any): item is FilterGroup {
