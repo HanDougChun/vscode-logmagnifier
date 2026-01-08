@@ -7,25 +7,9 @@ export class QuickAccessProvider implements vscode.TreeDataProvider<vscode.TreeI
     private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-    private _transientWordWrapStates: Map<string, string> = new Map();
-
     refresh(): void {
         Logger.getInstance().info('QuickAccessProvider.refresh() called');
         this._onDidChangeTreeData.fire();
-    }
-
-    public setTransientWordWrapState(uri: string, value: string): void {
-        this._transientWordWrapStates.set(uri, value);
-        this.refresh();
-    }
-
-    public getWordWrapState(uri: vscode.Uri): string {
-        const transient = this._transientWordWrapStates.get(uri.toString());
-        if (transient !== undefined) {
-            return transient;
-        }
-        const config = vscode.workspace.getConfiguration('editor', uri);
-        return config.get<string>('wordWrap') || 'off';
     }
 
     getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
@@ -42,16 +26,6 @@ export class QuickAccessProvider implements vscode.TreeDataProvider<vscode.TreeI
         const scope = activeEditor?.document.uri;
         const config = vscode.workspace.getConfiguration('editor', scope);
 
-        // Check for transient state first
-        let wordWrap = scope ? this._transientWordWrapStates.get(scope.toString()) : undefined;
-
-        if (wordWrap === undefined) {
-            wordWrap = config.get<string>('wordWrap');
-        }
-
-        Logger.getInstance().info(`Word Wrap state for ${scope?.toString() || 'global'}: ${wordWrap}`);
-        const isWordWrapOn = wordWrap !== 'off';
-
         const minimapEnabled = config.get<boolean>('minimap.enabled');
         Logger.getInstance().info(`Minimap state: ${minimapEnabled}`);
 
@@ -59,11 +33,22 @@ export class QuickAccessProvider implements vscode.TreeDataProvider<vscode.TreeI
         Logger.getInstance().info(`Sticky Scroll state: ${stickyScrollEnabled}`);
 
         return Promise.resolve([
-            this.createToggleItem(Constants.Labels.WordWrap, isWordWrapOn, Constants.Commands.ToggleWordWrap, 'word-wrap'),
+            this.createButtonItem('Toggle Word Wrap', Constants.Commands.ToggleWordWrap, 'word-wrap'),
             this.createToggleItem(Constants.Labels.Minimap, !!minimapEnabled, Constants.Commands.ToggleMinimap, 'layout-sidebar-right'),
             this.createToggleItem(Constants.Labels.StickyScroll, !!stickyScrollEnabled, Constants.Commands.ToggleStickyScroll, 'pinned'),
             this.createFileSizeItem()
         ]);
+    }
+
+    private createButtonItem(label: string, commandId: string, iconId: string): vscode.TreeItem {
+        const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+        item.iconPath = new vscode.ThemeIcon(iconId);
+        item.command = {
+            command: commandId,
+            title: label,
+            arguments: []
+        };
+        return item;
     }
 
     private _fileSizeUnit: 'bytes' | 'kb' | 'mb' = 'bytes';
