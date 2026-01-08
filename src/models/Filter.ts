@@ -21,4 +21,5 @@ export interface FilterGroup {
     isEnabled: boolean;
     isRegex?: boolean;
     resultCount?: number;
+    isExpanded?: boolean; // UI state persistence
 }

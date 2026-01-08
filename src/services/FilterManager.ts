@@ -155,13 +155,25 @@ export class FilterManager {
             name,
             filters: [],
             isEnabled: false,
-            isRegex
+            isRegex,
+            isExpanded: true
         };
         this.groups.push(newGroup);
         this.logger.info(`Filter group added: ${name} (Regex: ${isRegex})`);
         this.saveToState();
         this._onDidChangeFilters.fire();
         return newGroup;
+    }
+
+    public setGroupExpanded(groupId: string, expanded: boolean): void {
+        const group = this.groups.find(g => g.id === groupId);
+        if (group && group.isExpanded !== expanded) {
+            group.isExpanded = expanded;
+            // We save state, but NO event fired because expansion state change shouldn't trigger a full tree refresh
+            // (which would defeat the purpose of tracking UI state, as refresh forces getTreeItem).
+            // However, we DO want to persist it.
+            this.saveToState();
+        }
     }
 
     public addFilter(groupId: string, keyword: string, type: FilterType, isRegex: boolean = false, nickname?: string): FilterItem | undefined {
@@ -300,6 +312,10 @@ export class FilterManager {
             this.saveToState();
             this._onDidChangeFilters.fire();
         }
+    }
+
+    public refresh(): void {
+        this._onDidChangeFilters.fire();
     }
 
     public toggleFilter(groupId: string, filterId: string): void {
@@ -472,6 +488,7 @@ export class FilterManager {
                 const newGroup: FilterGroup = {
                     ...group,
                     id: newGroupId,
+                    isExpanded: group.isExpanded ?? true,
                     filters: group.filters.map(f => ({
                         ...f,
                         id: generateId()

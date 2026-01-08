@@ -11,8 +11,7 @@ import { CommandManager } from './services/CommandManager';
 
 export function activate(context: vscode.ExtensionContext) {
 	const filterManager = new FilterManager(context);
-	const wordTreeDataProvider = new FilterTreeDataProvider(filterManager, 'word');
-	const regexTreeDataProvider = new FilterTreeDataProvider(filterManager, 'regex');
+
 	const quickAccessProvider = new QuickAccessProvider();
 	const logProcessor = new LogProcessor();
 	const logger = Logger.getInstance();
@@ -23,11 +22,39 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let lastProcessedDoc: vscode.TextDocument | undefined;
 
-	const wordTreeView = vscode.window.createTreeView('logmagnifier-filters', { treeDataProvider: wordTreeDataProvider, dragAndDropController: wordTreeDataProvider });
-	const regexTreeView = vscode.window.createTreeView('logmagnifier-regex-filters', { treeDataProvider: regexTreeDataProvider, dragAndDropController: regexTreeDataProvider });
+	const wordTreeDataProvider = new FilterTreeDataProvider(filterManager, 'word');
+	const wordTreeView = vscode.window.createTreeView('logmagnifier-filters', {
+		treeDataProvider: wordTreeDataProvider,
+		dragAndDropController: wordTreeDataProvider,
+		showCollapseAll: true
+	});
+
+	const regexTreeDataProvider = new FilterTreeDataProvider(filterManager, 'regex');
+	const regexTreeView = vscode.window.createTreeView('logmagnifier-regex-filters', {
+		treeDataProvider: regexTreeDataProvider,
+		dragAndDropController: regexTreeDataProvider,
+		showCollapseAll: true
+	});
+
+	// Sync expansion state
+	const setupExpansionSync = (view: vscode.TreeView<any>) => {
+		context.subscriptions.push(view.onDidExpandElement(e => {
+			if ((e.element as any).filters) { // Check if group
+				filterManager.setGroupExpanded(e.element.id, true);
+			}
+		}));
+		context.subscriptions.push(view.onDidCollapseElement(e => {
+			if ((e.element as any).filters) {
+				filterManager.setGroupExpanded(e.element.id, false);
+			}
+		}));
+	};
+
+	setupExpansionSync(wordTreeView);
+	setupExpansionSync(regexTreeView);
 
 	// Initialize Command Manager (Handles all command registrations)
-	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, quickAccessProvider, logger, wordTreeView);
+	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, quickAccessProvider, logger, wordTreeView, regexTreeView);
 
 	vscode.window.createTreeView('logmagnifier-quick-access', { treeDataProvider: quickAccessProvider });
 
@@ -136,6 +163,11 @@ export function activate(context: vscode.ExtensionContext) {
 	// Update counts when text changes
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(e => {
 		if (vscode.window.activeTextEditor && e.document === vscode.window.activeTextEditor.document) {
+			const scheme = e.document.uri.scheme;
+			if (scheme !== 'file' && scheme !== 'untitled') {
+				return;
+			}
+
 			lastProcessedDoc = undefined; // Invalidate because content changed
 
 			if (debounceTimer) {

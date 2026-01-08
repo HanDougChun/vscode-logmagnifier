@@ -623,59 +623,115 @@
         "command": "logmagnifier.addSelectionToFilter",
         "title": "Add Selection to LogMagnifier",
         "icon": "$(plus)"
+      },
+      {
+        "command": "logmagnifier.expandAllWordGroups",
+        "title": "Expand All Groups",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "logmagnifier.collapseAllWordGroups",
+        "title": "Collapse All Groups",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "logmagnifier.expandAllRegexGroups",
+        "title": "Expand All Groups",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "logmagnifier.collapseAllRegexGroups",
+        "title": "Collapse All Groups",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "workbench.actions.treeView.logmagnifier-filters.collapseAll",
+        "title": "Collapse All"
+      },
+      {
+        "command": "workbench.actions.treeView.logmagnifier-regex-filters.collapseAll",
+        "title": "Collapse All"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "logmagnifier.exportWordFilters",
+          "command": "logmagnifier.expandAllWordGroups",
           "when": "view == logmagnifier-filters",
           "group": "navigation@1"
+        },
+        {
+          "command": "logmagnifier.collapseAllWordGroups",
+          "when": "view == logmagnifier-filters",
+          "group": "navigation@2"
+        },
+        {
+          "command": "workbench.actions.treeView.logmagnifier-filters.collapseAll",
+          "when": "false"
+        },
+        {
+          "command": "logmagnifier.exportWordFilters",
+          "when": "view == logmagnifier-filters",
+          "group": "navigation@3"
         },
         {
           "command": "logmagnifier.importWordFilters",
           "when": "view == logmagnifier-filters",
-          "group": "navigation@2"
+          "group": "navigation@4"
         },
         {
           "command": "logmagnifier.addFilterGroup",
           "when": "view == logmagnifier-filters",
-          "group": "navigation@3"
+          "group": "navigation@5"
         },
         {
           "command": "logmagnifier.togglePrependLineNumbers.enable",
           "when": "(view == logmagnifier-filters || view == logmagnifier-regex-filters) && !logmagnifier.prependLineNumbersEnabled",
-          "group": "navigation@4"
+          "group": "navigation@6"
         },
         {
           "command": "logmagnifier.togglePrependLineNumbers.disable",
           "when": "(view == logmagnifier-filters || view == logmagnifier-regex-filters) && logmagnifier.prependLineNumbersEnabled",
-          "group": "navigation@4"
+          "group": "navigation@6"
         },
         {
           "command": "logmagnifier.applyWordFilter",
           "when": "view == logmagnifier-filters",
-          "group": "navigation@5"
+          "group": "navigation@7"
         },
         {
-          "command": "logmagnifier.exportRegexFilters",
+          "command": "logmagnifier.expandAllRegexGroups",
           "when": "view == logmagnifier-regex-filters",
           "group": "navigation@1"
         },
         {
-          "command": "logmagnifier.importRegexFilters",
+          "command": "logmagnifier.collapseAllRegexGroups",
           "when": "view == logmagnifier-regex-filters",
           "group": "navigation@2"
         },
         {
-          "command": "logmagnifier.addRegexFilterGroup",
+          "command": "workbench.actions.treeView.logmagnifier-regex-filters.collapseAll",
+          "when": "false"
+        },
+        {
+          "command": "logmagnifier.exportRegexFilters",
           "when": "view == logmagnifier-regex-filters",
           "group": "navigation@3"
         },
         {
-          "command": "logmagnifier.applyRegexFilter",
+          "command": "logmagnifier.importRegexFilters",
+          "when": "view == logmagnifier-regex-filters",
+          "group": "navigation@4"
+        },
+        {
+          "command": "logmagnifier.addRegexFilterGroup",
           "when": "view == logmagnifier-regex-filters",
           "group": "navigation@5"
+        },
+        {
+          "command": "logmagnifier.applyRegexFilter",
+          "when": "view == logmagnifier-regex-filters",
+          "group": "navigation@7"
         }
       ],
       "editor/context": [

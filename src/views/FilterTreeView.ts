@@ -22,7 +22,8 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
 
     getTreeItem(element: TreeItem): vscode.TreeItem {
         if (this.isGroup(element)) {
-            const item = new vscode.TreeItem(element.name, vscode.TreeItemCollapsibleState.Expanded);
+            const state = element.isExpanded !== false ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed;
+            const item = new vscode.TreeItem(element.name, state);
             item.contextValue = element.isEnabled ? 'filterGroupEnabled' : 'filterGroupDisabled';
             item.id = element.id;
             item.iconPath = element.isEnabled ? new vscode.ThemeIcon('pass-filled') : new vscode.ThemeIcon('circle-large-outline');
@@ -119,6 +120,15 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
             return element.filters.filter(f => this.mode === 'regex' ? f.isRegex : !f.isRegex);
         }
         return [];
+    }
+
+    getParent(element: TreeItem): vscode.ProviderResult<TreeItem> {
+        if (this.isGroup(element)) {
+            return null;
+        }
+        // It's a filter item, find its group
+        const groups = this.filterManager.getGroups();
+        return groups.find(g => g.filters.some(f => f.id === element.id));
     }
 
     dropMimeTypes = ['application/vnd.code.tree.logmagnifier-filters'];
