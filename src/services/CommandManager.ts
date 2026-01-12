@@ -582,7 +582,7 @@ export class CommandManager {
 
                 const picked = await vscode.window.showQuickPick(colorItems, {
                     placeHolder: Constants.Prompts.SelectColor,
-                    ignoreFocusOut: true
+                    ignoreFocusOut: false
                 });
 
                 if (picked) {
@@ -742,7 +742,7 @@ export class CommandManager {
 
             const quickPick = vscode.window.createQuickPick();
             quickPick.placeholder = `Manage Profiles (Current: ${activeProfile})`;
-            quickPick.ignoreFocusOut = true;
+            quickPick.ignoreFocusOut = false;
 
             const updateItems = () => {
                 const items: vscode.QuickPickItem[] = [];
