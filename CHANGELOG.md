@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.2.0]
+
+### Added
+- **Session Input**: Suggest default name for new logcat session.
+- **Logcat Header**: Enhance logcat session header with detailed info.
+- **ADB Control**: Add control app menu (Uninstall, Clear Storage, Clear Cache).
+- **Process Filtering**: Implement ADB logcat viewer with PID filtering.
+
+### Changed
+- **Performance**: Defer ADB device fetching on startup.
+
+### Fixed
+- **UI**: Fix quick pick persistence on focus loss.
+
 ## [1.1.0]
 
 ### Added
