@@ -143,30 +143,30 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
 
     // Type guards
     private isDevice(element: LogcatTreeItem): element is AdbDevice {
-        return (element as any).id !== undefined && (element as any).type !== 'targetApp' && (element as any).type !== 'sessionGroup' && (element as any).type !== 'controlApp' && (element as any).type !== 'controlAction' && (element as any).priority === undefined && (element as any).tags === undefined;
+        return 'id' in element && 'type' in element && 'model' in element && !('priority' in element) && !('tags' in element);
     }
 
     private isTargetApp(element: LogcatTreeItem): element is TargetAppItem {
-        return (element as any).type === 'targetApp';
+        return 'type' in element && element.type === 'targetApp';
     }
 
     private isSessionGroup(element: LogcatTreeItem): element is SessionGroupItem {
-        return (element as any).type === 'sessionGroup';
+        return 'type' in element && element.type === 'sessionGroup';
     }
 
     private isSession(element: LogcatTreeItem): element is LogcatSession {
-        return (element as LogcatSession).tags !== undefined && (element as LogcatSession).device !== undefined;
+        return 'tags' in element && 'device' in element && 'isRunning' in element;
     }
 
     private isTag(element: LogcatTreeItem): element is LogcatTag {
-        return (element as LogcatTag).priority !== undefined && (element as LogcatTag).isEnabled !== undefined;
+        return 'priority' in element && 'isEnabled' in element && 'name' in element;
     }
 
     private isControlApp(element: LogcatTreeItem): element is ControlAppItem {
-        return (element as any).type === 'controlApp';
+        return 'type' in element && element.type === 'controlApp';
     }
 
     private isControlAction(element: LogcatTreeItem): element is ControlActionItem {
-        return (element as any).type === 'controlAction';
+        return 'type' in element && element.type === 'controlAction';
     }
 }
