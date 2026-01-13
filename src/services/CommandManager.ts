@@ -1001,8 +1001,28 @@ export class CommandManager {
             }
 
             if (document && document.isUntitled) {
-                const newDoc = await vscode.workspace.openTextDocument({ content: inMemoryContent, language: 'log' });
-                await vscode.window.showTextDocument(newDoc, { preview: false });
+                // Generate temp file path
+                const tmpDir = os.tmpdir();
+                const prefix = vscode.workspace.getConfiguration('logmagnifier').get<string>('tempFilePrefix') || 'filtered_';
+                const now = new Date();
+                const outputFilename = `${prefix}${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}.log`;
+                const outputPath = path.join(tmpDir, outputFilename);
+
+                try {
+                    fs.writeFileSync(outputPath, inMemoryContent, 'utf8');
+                    const newDoc = await vscode.workspace.openTextDocument(outputPath);
+                    await vscode.window.showTextDocument(newDoc, { preview: false });
+
+                    // Force language if needed (though .log extension should handle it)
+                    if (newDoc.languageId !== 'log') {
+                        await vscode.languages.setTextDocumentLanguage(newDoc, 'log');
+                    }
+                } catch (e) {
+                    this.logger.error(`Failed to write/open temp file for untitled filter: ${e}`);
+                    // Fallback to untitled if file write fails
+                    const newDoc = await vscode.workspace.openTextDocument({ content: inMemoryContent, language: 'log' });
+                    await vscode.window.showTextDocument(newDoc, { preview: false });
+                }
             } else {
                 if (outputPath) {
                     try {
