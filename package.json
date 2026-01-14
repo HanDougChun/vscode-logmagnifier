@@ -342,7 +342,7 @@
           },
           "logmagnifier.adbLogcatDefaultOptions": {
             "type": "string",
-            "default": "-v threadtime -T 1",
+            "default": "-v threadtime",
             "description": "Default options for adb logcat command."
           }
         }

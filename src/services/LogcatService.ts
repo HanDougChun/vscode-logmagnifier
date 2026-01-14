@@ -234,7 +234,7 @@ export class LogcatService {
 
         try {
             const adbPath = this.getAdbPath();
-            const defaultOptions = vscode.workspace.getConfiguration('logmagnifier').get<string>('adbLogcatDefaultOptions') || '-v threadtime -T 1';
+            const defaultOptions = vscode.workspace.getConfiguration('logmagnifier').get<string>('adbLogcatDefaultOptions') || '-v threadtime';
 
             // basic args: -s <device> logcat
             const args = ['-s', session.device.id, 'logcat'];
