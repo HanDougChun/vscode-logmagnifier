@@ -445,87 +445,87 @@
       {
         "command": "logmagnifier.changeFilterColor",
         "title": "Change Color...",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color01",
         "title": "Change color: color01",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color02",
         "title": "Change color: color02",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color03",
         "title": "Change color: color03",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color04",
         "title": "Change color: color04",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color05",
         "title": "Change color: color05",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color06",
         "title": "Change color: color06",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color07",
         "title": "Change color: color07",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color08",
         "title": "Change color: color08",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color09",
         "title": "Change color: color09",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color10",
         "title": "Change color: color10",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color11",
         "title": "Change color: color11",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color12",
         "title": "Change color: color12",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color13",
         "title": "Change color: color13",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color14",
         "title": "Change color: color14",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color15",
         "title": "Change color: color15",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.changeFilterColor.color16",
         "title": "Change color: color16",
-        "icon": "$(paintcan)"
+        "icon": "$(symbol-color)"
       },
       {
         "command": "logmagnifier.toggleFilterHighlightMode.word",
