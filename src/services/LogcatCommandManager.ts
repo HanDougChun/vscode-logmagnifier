@@ -236,6 +236,93 @@ export class LogcatCommandManager {
                 }
             }
         }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.dumpsys', async (item: ControlActionItem) => {
+            if (item && item.device && item.device.targetApp) {
+                try {
+                    const result = await this.logcatService.runDumpsysPackage(item.device.id, item.device.targetApp);
+                    if (result) {
+                        // Create a URI with a unique title: "Dumpsys pkg: <package> (<HMS>)"
+                        const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
+                        const uri = vscode.Uri.from({ scheme: 'untitled', path: `Dumpsys pkg: ${item.device.targetApp} (${timestamp})` });
+                        const doc = await vscode.workspace.openTextDocument(uri);
+
+                        // Replace content
+                        const edit = new vscode.WorkspaceEdit();
+                        const fullRange = new vscode.Range(
+                            doc.positionAt(0),
+                            doc.positionAt(doc.getText().length)
+                        );
+                        edit.replace(uri, fullRange, result);
+                        await vscode.workspace.applyEdit(edit);
+
+                        await vscode.window.showTextDocument(doc);
+                    } else {
+                        vscode.window.showErrorMessage('Dumpsys returned no output.');
+                    }
+                } catch (e: any) {
+                    vscode.window.showErrorMessage(`Dumpsys failed: ${e.message}`);
+                }
+            }
+        }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.dumpsysMeminfo', async (item: ControlActionItem) => {
+            if (item && item.device && item.device.targetApp) {
+                try {
+                    const result = await this.logcatService.runDumpsysMeminfo(item.device.id, item.device.targetApp);
+                    if (result) {
+                        // Create a URI with a unique title: "Dumpsys mem: <package> (<HMS>)"
+                        const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
+                        const uri = vscode.Uri.from({ scheme: 'untitled', path: `Dumpsys mem: ${item.device.targetApp} (${timestamp})` });
+                        const doc = await vscode.workspace.openTextDocument(uri);
+
+                        // Replace content
+                        const edit = new vscode.WorkspaceEdit();
+                        const fullRange = new vscode.Range(
+                            doc.positionAt(0),
+                            doc.positionAt(doc.getText().length)
+                        );
+                        edit.replace(uri, fullRange, result);
+                        await vscode.workspace.applyEdit(edit);
+
+                        await vscode.window.showTextDocument(doc);
+                    } else {
+                        vscode.window.showErrorMessage('Dumpsys meminfo returned no output.');
+                    }
+                } catch (e: any) {
+                    vscode.window.showErrorMessage(`Dumpsys meminfo failed: ${e.message}`);
+                }
+            }
+        }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.dumpsysActivity', async (item: ControlActionItem) => {
+            if (item && item.device && item.device.targetApp) {
+                try {
+                    const result = await this.logcatService.runDumpsysActivity(item.device.id, item.device.targetApp);
+                    if (result) {
+                        // Create a URI with a unique title: "Dumpsys act: <package> (<HMS>)"
+                        const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
+                        const uri = vscode.Uri.from({ scheme: 'untitled', path: `Dumpsys act: ${item.device.targetApp} (${timestamp})` });
+                        const doc = await vscode.workspace.openTextDocument(uri);
+
+                        // Replace content
+                        const edit = new vscode.WorkspaceEdit();
+                        const fullRange = new vscode.Range(
+                            doc.positionAt(0),
+                            doc.positionAt(doc.getText().length)
+                        );
+                        edit.replace(uri, fullRange, result);
+                        await vscode.workspace.applyEdit(edit);
+
+                        await vscode.window.showTextDocument(doc);
+                    } else {
+                        vscode.window.showErrorMessage('Dumpsys activity returned no output.');
+                    }
+                } catch (e: any) {
+                    vscode.window.showErrorMessage(`Dumpsys activity failed: ${e.message}`);
+                }
+            }
+        }));
     }
 
     private parseTagInput(input: string): LogcatTag | undefined {

@@ -52,7 +52,12 @@ export interface ControlAppItem {
     device: AdbDevice;
 }
 
-export type ControlActionType = 'uninstall' | 'clearStorage' | 'clearCache';
+export interface DumpsysGroupItem {
+    type: 'dumpsysGroup';
+    device: AdbDevice;
+}
+
+export type ControlActionType = 'uninstall' | 'clearStorage' | 'clearCache' | 'dumpsys' | 'dumpsysMeminfo' | 'dumpsysActivity';
 
 export interface ControlActionItem {
     type: 'controlAction';
@@ -60,4 +65,4 @@ export interface ControlActionItem {
     device: AdbDevice;
 }
 
-export type LogcatTreeItem = AdbDevice | LogcatSession | LogcatTag | TargetAppItem | SessionGroupItem | ControlAppItem | ControlActionItem;
+export type LogcatTreeItem = AdbDevice | LogcatSession | LogcatTag | TargetAppItem | SessionGroupItem | ControlAppItem | ControlActionItem | DumpsysGroupItem;

@@ -1,7 +1,7 @@
 
 import * as vscode from 'vscode';
 import { LogcatService } from '../services/LogcatService';
-import { AdbDevice, LogcatSession, LogcatTag, LogcatTreeItem, TargetAppItem, SessionGroupItem, ControlAppItem, ControlActionItem } from '../models/LogcatModels';
+import { AdbDevice, LogcatSession, LogcatTag, LogcatTreeItem, TargetAppItem, SessionGroupItem, ControlAppItem, ControlActionItem, DumpsysGroupItem } from '../models/LogcatModels';
 
 
 export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeItem> {
@@ -71,6 +71,11 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
             item.contextValue = 'controlApp';
             item.iconPath = new vscode.ThemeIcon('tools');
             return item;
+        } else if (this.isDumpsysGroup(element)) {
+            const item = new vscode.TreeItem('Dumpsys', vscode.TreeItemCollapsibleState.Collapsed);
+            item.contextValue = 'dumpsysGroup';
+            item.iconPath = new vscode.ThemeIcon('output');
+            return item;
         } else if (this.isControlAction(element)) {
             let label = '';
             let icon = '';
@@ -91,6 +96,21 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
                     label = 'Clear cache';
                     icon = 'archive';
                     commandId = 'logmagnifier.control.clearCache';
+                    break;
+                case 'dumpsys':
+                    label = 'Package';
+                    icon = 'package';
+                    commandId = 'logmagnifier.control.dumpsys';
+                    break;
+                case 'dumpsysMeminfo':
+                    label = 'Meminfo';
+                    icon = 'graph-line';
+                    commandId = 'logmagnifier.control.dumpsysMeminfo';
+                    break;
+                case 'dumpsysActivity':
+                    label = 'Activity';
+                    icon = 'layers-active';
+                    commandId = 'logmagnifier.control.dumpsysActivity';
                     break;
             }
 
@@ -139,7 +159,14 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
             return [
                 { type: 'controlAction', actionType: 'uninstall', device: element.device } as ControlActionItem,
                 { type: 'controlAction', actionType: 'clearStorage', device: element.device } as ControlActionItem,
-                { type: 'controlAction', actionType: 'clearCache', device: element.device } as ControlActionItem
+                { type: 'controlAction', actionType: 'clearCache', device: element.device } as ControlActionItem,
+                { type: 'dumpsysGroup', device: element.device } as DumpsysGroupItem
+            ];
+        } else if (this.isDumpsysGroup(element)) {
+            return [
+                { type: 'controlAction', actionType: 'dumpsys', device: element.device } as ControlActionItem,
+                { type: 'controlAction', actionType: 'dumpsysMeminfo', device: element.device } as ControlActionItem,
+                { type: 'controlAction', actionType: 'dumpsysActivity', device: element.device } as ControlActionItem
             ];
         } else if (this.isSessionGroup(element)) {
             return this.logcatService.getSessions().filter(s => s.device.id === element.device.id);
@@ -172,6 +199,10 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
 
     private isControlApp(element: LogcatTreeItem): element is ControlAppItem {
         return 'type' in element && element.type === 'controlApp';
+    }
+
+    private isDumpsysGroup(element: LogcatTreeItem): element is DumpsysGroupItem {
+        return 'type' in element && element.type === 'dumpsysGroup';
     }
 
     private isControlAction(element: LogcatTreeItem): element is ControlActionItem {

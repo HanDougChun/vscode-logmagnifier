@@ -552,4 +552,54 @@ export class LogcatService {
             });
         });
     }
+    public async runDumpsysPackage(deviceId: string, packageName: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const adbPath = this.getAdbPath();
+            const cmd = `${adbPath} -s ${deviceId} shell dumpsys package ${packageName}`;
+            this.logger.info(`[ADB] Running dumpsys: ${cmd}`);
+
+            cp.exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
+                if (err) {
+                    this.logger.error(`[ADB] Dumpsys failed: ${err.message}`);
+                    reject(err);
+                    return;
+                }
+                resolve(stdout);
+            });
+        });
+    }
+
+    public async runDumpsysMeminfo(deviceId: string, packageName: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const adbPath = this.getAdbPath();
+            const cmd = `${adbPath} -s ${deviceId} shell dumpsys meminfo ${packageName}`;
+            this.logger.info(`[ADB] Running dumpsys meminfo: ${cmd}`);
+
+            cp.exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
+                if (err) {
+                    this.logger.error(`[ADB] Dumpsys meminfo failed: ${err.message}`);
+                    reject(err);
+                    return;
+                }
+                resolve(stdout);
+            });
+        });
+    }
+
+    public async runDumpsysActivity(deviceId: string, packageName: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const adbPath = this.getAdbPath();
+            const cmd = `${adbPath} -s ${deviceId} shell dumpsys activity ${packageName}`;
+            this.logger.info(`[ADB] Running dumpsys activity: ${cmd}`);
+
+            cp.exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
+                if (err) {
+                    this.logger.error(`[ADB] Dumpsys activity failed: ${err.message}`);
+                    reject(err);
+                    return;
+                }
+                resolve(stdout);
+            });
+        });
+    }
 }
