@@ -27,8 +27,9 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
 - **ADB Logcat Integration**: Directly view and filter Android logs within VS Code.
   - **Device Management**: View connected devices and their status.
   - **Process Filtering**: Filter logs by specific running applications (PID) automatically.
-  - **App Control**: Uninstall apps, clear storage, and clear cache directly from the sidebar.
-  - **Session Management**: Create multiple logcat sessions with custom tag filters and priorities.
+  - **Control Device**: Quickly take screenshots, record screen, and toggle 'Show Touches'.
+  - **App Control**: Uninstall apps, clear storage, clear cache, and run dumpsys commands.
+  - **Session Management**: Create multiple logcat sessions with custom tag filters, priorities, and historical time toggles.
   - **Detailed Headers**: Sessions include start time (Local/UTC) and command details.
 
 ## Usage
@@ -57,12 +58,18 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
 
 1.  **Devices**:
     *   The "ADB Logcat" view automatically lists connected Android devices.
-    *   **Select Target App**: Click the "Target app" item under a device to filter logs by a specific running application. This uses PID filtering to show only relevant logs.
-2.  **Control App**:
+    *   **Select Target App**: Click the "Target app" item under a device to filter logs by a specific running application.
+2.  **Control Device**:
+    *   **Screenshot**: Capture and view a screenshot of the device immediately.
+    *   **Screen Record**: Start/Stop screen recording. Videos are automatically pulled to your temp folder and opened.
+    *   **Show Touches**: Toggle visual feedback for taps on the device screen.
+3.  **Control App**:
     *   When a target app is selected, a "Control app" menu appears.
-    *   Right-click or take action to **Uninstall**, **Clear Storage**, or **Clear Cache** for the selected application.
-3.  **Sessions**:
+    *   **Actions**: Uninstall, Clear Storage, or Clear Cache for the selected application.
+    *   **Dumpsys**: Access `package`, `meminfo`, and `activity` dumps directly from the sidebar.
+4.  **Sessions**:
     *   **Create Session**: Click the `+` icon on "Logcat Sessions" or run "Add Logcat Session".
+    *   **History Toggle**: Toggle the clock icon on a session to switch between "Start from now" and "Show full history".
     *   **Add Tags**: Right-click a session to add specific tag filters (e.g., `MyApp:D`).
     *   **Start/Stop**: Use the Play/Stop icons to control log capture.
     *   **Output**: Logs are streamed to a new editor document with a detailed header.
