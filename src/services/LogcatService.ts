@@ -529,11 +529,11 @@ export class LogcatService {
                 }
             } else {
                 // specific behavior if doc is closed? Close session?
-                console.warn('Output document closed, stopping session');
+                this.logger.warn('Output document closed, stopping session');
                 this.stopSession(sessionId);
             }
         } catch (e) {
-            console.error('Failed to write to logcat document', e);
+            this.logger.error(`Failed to write to logcat document: ${e}`);
         }
     }
 
