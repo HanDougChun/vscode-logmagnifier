@@ -949,31 +949,35 @@ export class CommandManager {
                 cancellable: false
             }, async (progress) => {
                 try {
+                    let targetPath = filePathFromTab || document?.uri.fsPath;
+                    let tempInputPath: string | undefined;
+
+                    // Handle Untitled Files: Write to temp file first to use standard processor
                     if (document && document.isUntitled) {
-                        const fullText = document.getText();
-                        const lines = fullText.split(/\r?\n/);
-                        const compiledGroups = this.logProcessor.compileGroups(activeGroups);
-                        const filtered = lines.filter(line => {
-                            stats.processed++;
-                            const matchResult = this.logProcessor.checkMatchCompiled(line, compiledGroups);
-                            if (matchResult.isMatched) {
-                                stats.matched++;
-                            }
-                            return matchResult.isMatched;
-                        });
-                        inMemoryContent = filtered.join('\n');
-                    } else {
-                        const targetPath = filePathFromTab || document?.uri.fsPath;
-                        if (!targetPath) {
-                            throw new Error("Could not check active file path");
-                        }
+                        const tmpDir = os.tmpdir();
+                        const randomSuffix = Math.random().toString(36).substring(7);
+                        tempInputPath = path.join(tmpDir, `vscode_loglens_untitled_${randomSuffix}.log`);
 
-                        // Determine total line count for padding
-                        let totalLineCount = 999999;
-                        if (document) {
-                            totalLineCount = document.lineCount;
+                        try {
+                            fs.writeFileSync(tempInputPath, document.getText(), 'utf8');
+                            targetPath = tempInputPath;
+                        } catch (e) {
+                            this.logger.error(`Failed to create temp file for untitled document: ${e}`);
+                            throw new Error("Failed to process untitled file");
                         }
+                    }
 
+                    if (!targetPath) {
+                        throw new Error("Could not check active file path");
+                    }
+
+                    // Determine total line count for padding
+                    let totalLineCount = 999999;
+                    if (document) {
+                        totalLineCount = document.lineCount;
+                    }
+
+                    try {
                         const result = await this.logProcessor.processFile(targetPath, activeGroups, {
                             prependLineNumbers: this._prependLineNumbersEnabled,
                             totalLineCount: totalLineCount
@@ -981,6 +985,13 @@ export class CommandManager {
                         outputPath = result.outputPath;
                         stats.processed = result.processed;
                         stats.matched = result.matched;
+                    } finally {
+                        // Cleanup temp input file if we created one
+                        if (tempInputPath && fs.existsSync(tempInputPath)) {
+                            try {
+                                fs.unlinkSync(tempInputPath);
+                            } catch (e) { /* ignore cleanup error */ }
+                        }
                     }
                 } catch (error) {
                     vscode.window.showErrorMessage(`Error applying filters: ${error}`);
@@ -996,43 +1007,20 @@ export class CommandManager {
                 vscode.window.setStatusBarMessage(message, timeout);
             }
 
-            if (document && document.isUntitled) {
-                // Generate temp file path
-                const tmpDir = os.tmpdir();
-                const prefix = vscode.workspace.getConfiguration('logmagnifier').get<string>('tempFilePrefix') || 'filtered_';
-                const now = new Date();
-                const outputFilename = `${prefix}${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}.log`;
-                const outputPath = path.join(tmpDir, outputFilename);
-
+            if (outputPath) {
                 try {
-                    fs.writeFileSync(outputPath, inMemoryContent, 'utf8');
                     const newDoc = await vscode.workspace.openTextDocument(outputPath);
                     await vscode.window.showTextDocument(newDoc, { preview: false });
 
-                    // Force language if needed (though .log extension should handle it)
+                    // Force language to log to ensure syntax highlighting works
                     if (newDoc.languageId !== 'log') {
-                        await vscode.languages.setTextDocumentLanguage(newDoc, 'log');
+                        try {
+                            await vscode.languages.setTextDocumentLanguage(newDoc, 'log');
+                        } catch (e) { /* ignore */ }
                     }
                 } catch (e) {
-                    this.logger.error(`Failed to write/open temp file for untitled filter: ${e}`);
-                    // Fallback to untitled if file write fails
-                    const newDoc = await vscode.workspace.openTextDocument({ content: inMemoryContent, language: 'log' });
-                    await vscode.window.showTextDocument(newDoc, { preview: false });
-                }
-            } else {
-                if (outputPath) {
-                    try {
-                        const newDoc = await vscode.workspace.openTextDocument(outputPath);
-                        await vscode.window.showTextDocument(newDoc, { preview: false });
-                        if (newDoc.languageId !== 'log') {
-                            try {
-                                await vscode.languages.setTextDocumentLanguage(newDoc, 'log');
-                            } catch (e) { /* ignore */ }
-                        }
-                    } catch (e) {
-                        this.logger.info(`Failed to open text document (likely too large), falling back to vscode.open: ${e}`);
-                        await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(outputPath));
-                    }
+                    this.logger.info(`Failed to open text document (likely too large), falling back to vscode.open: ${e}`);
+                    await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(outputPath));
                 }
             }
         } finally {
