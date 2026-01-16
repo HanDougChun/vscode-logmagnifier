@@ -11,6 +11,9 @@ import { CommandManager } from './services/CommandManager';
 import { LogcatService } from './services/LogcatService';
 import { LogcatTreeProvider } from './views/LogcatTreeProvider';
 import { LogcatCommandManager } from './services/LogcatCommandManager';
+import { LogBookmarkService } from './services/LogBookmarkService';
+import { LogBookmarkProvider } from './views/LogBookmarkProvider';
+import { LogBookmarkCommandManager } from './services/LogBookmarkCommandManager';
 
 export function activate(context: vscode.ExtensionContext) {
 	const filterManager = new FilterManager(context);
@@ -74,6 +77,13 @@ export function activate(context: vscode.ExtensionContext) {
 	setTimeout(() => {
 		logcatTreeProvider.initialize();
 	}, 1000);
+
+	// Log Bookmark
+	const bookmarkService = new LogBookmarkService(context);
+	context.subscriptions.push(bookmarkService);
+	const bookmarkProvider = new LogBookmarkProvider(bookmarkService);
+	vscode.window.registerTreeDataProvider('logmagnifier-bookmark', bookmarkProvider);
+	new LogBookmarkCommandManager(context, bookmarkService);
 
 	vscode.window.createTreeView('logmagnifier-quick-access', { treeDataProvider: quickAccessProvider });
 

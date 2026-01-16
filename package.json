@@ -355,6 +355,13 @@
           "title": "LogMagnifier",
           "icon": "resources/icon.svg"
         }
+      ],
+      "panel": [
+        {
+          "id": "logmagnifier-panel",
+          "title": "LogMagnifier",
+          "icon": "resources/icon.svg"
+        }
       ]
     },
     "views": {
@@ -379,8 +386,21 @@
           "name": "ADB Logcat",
           "icon": "$(terminal)"
         }
+      ],
+      "logmagnifier-panel": [
+        {
+          "id": "logmagnifier-bookmark",
+          "name": "Log Bookmark",
+          "icon": "$(bookmark)"
+        }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "logmagnifier-bookmark",
+        "contents": "No bookmarks yet. Right-click on a line in an editor and select 'Add line to LogMagnifier bookmark'."
+      }
+    ],
     "commands": [
       {
         "command": "logmagnifier.addFilterGroup",
@@ -799,6 +819,18 @@
         "icon": "$(symbol-method)"
       },
       {
+        "command": "logmagnifier.addBookmark",
+        "title": "Add Line to LogMagnifier Bookmark"
+      },
+      {
+        "command": "logmagnifier.jumpToBookmark",
+        "title": "Jump to Bookmark"
+      },
+      {
+        "command": "logmagnifier.removeBookmark",
+        "title": "Remove Bookmark"
+      },
+      {
         "command": "logmagnifier.session.enableTimeFilter",
         "title": "With history: yes (Click to toggle)",
         "icon": "$(history)"
@@ -1061,7 +1093,11 @@
         {
           "command": "logmagnifier.addSelectionToFilter",
           "when": "editorHasSelection",
-          "group": "1_modification"
+          "group": "logmagnifier@2"
+        },
+        {
+          "command": "logmagnifier.addBookmark",
+          "group": "logmagnifier@1"
         }
       ],
       "view/item/context": [
@@ -1328,6 +1364,11 @@
         {
           "command": "logmagnifier.removeLogcatTag",
           "when": "view == logmagnifier-adb-logcat && viewItem == tag_editable",
+          "group": "inline"
+        },
+        {
+          "command": "logmagnifier.removeBookmark",
+          "when": "view == logmagnifier-bookmark && viewItem == bookmark",
           "group": "inline"
         }
       ]
