@@ -29,6 +29,10 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
   - **Control Device**: Quickly take screenshots, record screen, and toggle 'Show Touches'.
   - **App Control**: Uninstall apps, clear storage, clear cache, and run dumpsys commands.
   - **Session Management**: Create multiple logcat sessions with custom tag filters, priorities, and historical time toggles.
+- **Log Bookmarks**: Bookmark important lines in your log files for easy reference and navigation.
+  - **Add/Remove**: Toggle bookmarks via context menu.
+  - **Navigate**: Jump to bookmarks instantly from the "LogMagnifier" view in the Panel.
+  - **Persistence**: Bookmarks are saved and restored across sessions.
 
 ## Usage
 
@@ -72,6 +76,17 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
     - **Add Tags**: Right-click a session to add specific tag filters (e.g., `MyApp:D`).
     - **Start/Stop**: Use the Play/Stop icons to control log capture.
     - **Output**: Logs are streamed to a new editor document with a detailed header.
+
+### Log Bookmarks
+
+1.  **Add Bookmark**:
+    - Right-click a line and select "Add Line to LogMagnifier Bookmark".
+2.  **View Bookmarks**:
+    - Open the "LogMagnifier" view in the panel (bottom panel).
+    - Click any bookmark to jump to that line in the editor.
+    - Click the 'x' icon to remove a bookmark.
+3.  **Persistence**:
+    - Bookmarks are automatically saved for each file and restored when you reopen the workspace.
 
 ## Requirements
 

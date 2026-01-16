@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.4.0]
+
+### Added
+- **Log Bookmarks**: Add, remove, and persist bookmarks for important log lines. Includes a dedicated view in the LogMagnifier Panel for easy navigation.
+- **Navigation Animation**: Added a visual flash animation when navigating to search matches or bookmarks (configurable).
+
 ## [1.3.0]
 
 ### Added
