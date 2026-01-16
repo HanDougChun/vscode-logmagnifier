@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
 import { LogBookmarkService } from './LogBookmarkService';
 import { BookmarkItem } from '../models/Bookmark';
+import { HighlightService } from './HighlightService';
+import { Constants } from '../constants';
 
 export class LogBookmarkCommandManager {
     constructor(
         context: vscode.ExtensionContext,
-        private bookmarkService: LogBookmarkService
+        private bookmarkService: LogBookmarkService,
+        private highlightService: HighlightService
     ) {
         this.registerCommands(context);
     }
@@ -38,6 +41,7 @@ export class LogBookmarkCommandManager {
             const range = new vscode.Range(item.line, 0, item.line, 0);
             editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
             editor.selection = new vscode.Selection(range.start, range.start);
+            this.highlightService.flashLine(editor, item.line, Constants.Configuration.Bookmark.HighlightColor);
         } catch (e) {
             vscode.window.showErrorMessage(`Failed to open bookmark: ${e}`);
         }

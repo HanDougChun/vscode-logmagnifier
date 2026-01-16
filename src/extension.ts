@@ -87,7 +87,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.registerWebviewViewProvider('logmagnifier-bookmark', bookmarkWebviewProvider)
 	);
 
-	new LogBookmarkCommandManager(context, bookmarkService);
+	new LogBookmarkCommandManager(context, bookmarkService, highlightService);
 
 	vscode.window.createTreeView('logmagnifier-quick-access', { treeDataProvider: quickAccessProvider });
 
