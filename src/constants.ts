@@ -134,6 +134,7 @@ export const Constants = {
 
         // Bookmark
         AddBookmark: 'logmagnifier.addBookmark',
+        AddMatchListToBookmark: 'logmagnifier.addMatchListToBookmark',
         RemoveBookmark: 'logmagnifier.removeBookmark',
         JumpToBookmark: 'logmagnifier.jumpToBookmark',
 

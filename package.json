@@ -836,6 +836,11 @@
         "title": "Add Line to LogMagnifier Bookmark"
       },
       {
+        "command": "logmagnifier.addMatchListToBookmark",
+        "title": "Add matches to bookmark",
+        "icon": "$(bookmark)"
+      },
+      {
         "command": "logmagnifier.jumpToBookmark",
         "title": "Jump to Bookmark"
       },
@@ -1123,6 +1128,11 @@
           "command": "logmagnifier.nextMatch",
           "when": "(view == logmagnifier-filters || view == logmagnifier-regex-filters) && viewItem =~ /filterItem.*/",
           "group": "1_nav@2"
+        },
+        {
+          "command": "logmagnifier.addMatchListToBookmark",
+          "when": "(view == logmagnifier-filters && viewItem =~ /.*_hasMatches/) || (view == logmagnifier-regex-filters && viewItem =~ /.*_hasMatches/)",
+          "group": "1_nav@3"
         },
         {
           "submenu": "logmagnifier.filterTypeSubmenu",
