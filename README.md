@@ -81,6 +81,7 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
 
 1.  **Add Bookmark**:
     - Right-click a line and select "Add Line to LogMagnifier Bookmark".
+    - Select text in the editor, right-click, and select "Add Matches to LogMagnifier Bookmark" to bookmark all occurrences.
 2.  **View Bookmarks**:
     - Open the "LogMagnifier" view in the panel (bottom panel).
     - Click any bookmark to jump to that line in the editor.
@@ -104,6 +105,7 @@ This extension contributes the following settings:
 * `logmagnifier.statusBarTimeout`: Duration for status bar messages in milliseconds. (Default: 5000)
 * `logmagnifier.adbPath`: Path to the adb executable. (Default: `adb`)
 * `logmagnifier.adbLogcatDefaultOptions`: Default options for adb logcat command. (Default: `-v threadtime`)
+* `logmagnifier.bookmark.maxMatches`: Maximum number of matches to add to bookmarks at once. (Default: `500`)
 
 ## Known Limitations
 
