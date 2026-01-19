@@ -159,7 +159,7 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         if (bookmarks.size === 0) {
-            fileGroups = '<div class="empty-state">No bookmarks yet. Right-click on a line in an editor and select "Add line to LogMagnifier bookmark".</div>';
+            fileGroups = '<div class="empty-state">No bookmarks yet. Right-click on a line in an editor and select "Add Line to LogMagnifier Bookmark".</div>';
         }
 
         // Serialize the full map to inject into the script
