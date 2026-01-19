@@ -79,4 +79,9 @@ export interface ControlDeviceActionItem {
     meta?: any;
 }
 
-export type LogcatTreeItem = AdbDevice | LogcatSession | LogcatTag | TargetAppItem | SessionGroupItem | ControlAppItem | ControlActionItem | DumpsysGroupItem | ControlDeviceItem | ControlDeviceActionItem;
+export interface MessageItem {
+    type: 'message';
+    message: string;
+}
+
+export type LogcatTreeItem = AdbDevice | LogcatSession | LogcatTag | TargetAppItem | SessionGroupItem | ControlAppItem | ControlActionItem | DumpsysGroupItem | ControlDeviceItem | ControlDeviceActionItem | MessageItem;

@@ -1,7 +1,7 @@
 
 import * as vscode from 'vscode';
 import { LogcatService } from '../services/LogcatService';
-import { AdbDevice, LogcatSession, LogcatTag, LogcatTreeItem, TargetAppItem, SessionGroupItem, ControlAppItem, ControlActionItem, DumpsysGroupItem, ControlDeviceItem, ControlDeviceActionItem } from '../models/LogcatModels';
+import { AdbDevice, LogcatSession, LogcatTag, LogcatTreeItem, TargetAppItem, SessionGroupItem, ControlAppItem, ControlActionItem, DumpsysGroupItem, ControlDeviceItem, ControlDeviceActionItem, MessageItem } from '../models/LogcatModels';
 
 
 export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeItem> {
@@ -216,6 +216,10 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
                 item.tooltip = 'Toggle "Show Taps" in Developer Options';
                 return item;
             }
+        } else if (this.isMessage(element)) {
+            const item = new vscode.TreeItem(element.message, vscode.TreeItemCollapsibleState.None);
+            item.contextValue = 'message';
+            return item;
         }
 
         return new vscode.TreeItem('Unknown');
@@ -227,8 +231,14 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
                 this.initialized = true;
                 return this.logcatService.getDevices().then(devices => {
                     this.devices = devices;
+                    if (this.devices.length === 0) {
+                        return [{ type: 'message', message: 'No devices connected' } as MessageItem];
+                    }
                     return this.devices;
                 });
+            }
+            if (this.devices.length === 0) {
+                return [{ type: 'message', message: 'No devices connected' } as MessageItem];
             }
             return this.devices;
         } else if (this.isDevice(element)) {
@@ -315,5 +325,9 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
 
     private isControlDeviceAction(element: LogcatTreeItem): element is ControlDeviceActionItem {
         return 'type' in element && element.type === 'controlDeviceAction';
+    }
+
+    private isMessage(element: LogcatTreeItem): element is MessageItem {
+        return 'type' in element && element.type === 'message';
     }
 }
