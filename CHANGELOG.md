@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.4.2]
+
+### Added
+- **Editor**: Added "Remove Matches With Selection" command.
+
+### Fixed
+- **Config**: Fixed "Occurrences Highlight" setting persistence.
+
 ## [1.4.1]
 
 ### Added
