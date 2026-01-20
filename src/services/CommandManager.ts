@@ -659,10 +659,10 @@ export class CommandManager {
             });
 
             if (selected) {
-                let newValue: boolean | string = false;
-                if (selected.label === 'Single File') {
+                let newValue: boolean | string = 'off';
+                if (selected.label === Constants.Labels.SingleFile) {
                     newValue = 'singleFile';
-                } else if (selected.label === 'Multi File') {
+                } else if (selected.label === Constants.Labels.MultiFile) {
                     newValue = 'multiFile';
                 }
 

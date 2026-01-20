@@ -44,7 +44,7 @@ export class QuickAccessProvider implements vscode.TreeDataProvider<vscode.TreeI
             this.createToggleItem(Constants.Labels.Minimap, !!minimapEnabled, Constants.Commands.ToggleMinimap, 'layout-sidebar-right'),
             this.createToggleItem(Constants.Labels.StickyScroll, !!stickyScrollEnabled, Constants.Commands.ToggleStickyScroll, 'pinned'),
             this.createToggleItem(Constants.Labels.NavigationAnimation, !!lmConfig.get<boolean>(Constants.Configuration.Editor.NavigationAnimation), Constants.Commands.ToggleNavigationAnimation, 'eye'),
-            this.createOccurrencesHighlightItem(lmConfig),
+            this.createOccurrencesHighlightItem(config),
             this.createFileSizeItem(),
             this.createSeparator(),
             this.createProfileItem()
