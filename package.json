@@ -407,8 +407,8 @@
           "icon": "$(regex)"
         },
         {
-          "id": "logmagnifier-adb-logcat",
-          "name": "ADB Logcat",
+          "id": "logmagnifier-adb-devices",
+          "name": "ADB Devices",
           "icon": "$(terminal)"
         }
       ],
@@ -1138,7 +1138,7 @@
         },
         {
           "command": "logmagnifier.refreshDevices",
-          "when": "view == logmagnifier-adb-logcat",
+          "when": "view == logmagnifier-adb-devices",
           "group": "navigation"
         }
       ],
@@ -1391,47 +1391,47 @@
         },
         {
           "command": "logmagnifier.addLogcatSession",
-          "when": "view == logmagnifier-adb-logcat && viewItem == sessionGroup",
+          "when": "view == logmagnifier-adb-devices && viewItem == sessionGroup",
           "group": "inline"
         },
         {
           "command": "logmagnifier.startLogcatSession",
-          "when": "view == logmagnifier-adb-logcat && viewItem =~ /session_stopped.*/",
+          "when": "view == logmagnifier-adb-devices && viewItem =~ /session_stopped.*/",
           "group": "inline@4"
         },
         {
           "command": "logmagnifier.stopLogcatSession",
-          "when": "view == logmagnifier-adb-logcat && viewItem =~ /session_running.*/",
+          "when": "view == logmagnifier-adb-devices && viewItem =~ /session_running.*/",
           "group": "inline@4"
         },
         {
           "command": "logmagnifier.session.enableTimeFilter",
-          "when": "view == logmagnifier-adb-logcat && viewItem =~ /session_stopped_full/",
+          "when": "view == logmagnifier-adb-devices && viewItem =~ /session_stopped_full/",
           "group": "inline@2"
         },
         {
           "command": "logmagnifier.session.disableTimeFilter",
-          "when": "view == logmagnifier-adb-logcat && viewItem =~ /session_stopped_t1/",
+          "when": "view == logmagnifier-adb-devices && viewItem =~ /session_stopped_t1/",
           "group": "inline@2"
         },
         {
           "command": "logmagnifier.removeLogcatSession",
-          "when": "view == logmagnifier-adb-logcat && viewItem =~ /session_.*/",
+          "when": "view == logmagnifier-adb-devices && viewItem =~ /session_.*/",
           "group": "inline@3"
         },
         {
           "command": "logmagnifier.addLogcatTag",
-          "when": "view == logmagnifier-adb-logcat && viewItem =~ /session_stopped.*/",
+          "when": "view == logmagnifier-adb-devices && viewItem =~ /session_stopped.*/",
           "group": "inline@1"
         },
         {
           "command": "logmagnifier.editLogcatTag",
-          "when": "view == logmagnifier-adb-logcat && viewItem == tag_editable",
+          "when": "view == logmagnifier-adb-devices && viewItem == tag_editable",
           "group": "inline"
         },
         {
           "command": "logmagnifier.removeLogcatTag",
-          "when": "view == logmagnifier-adb-logcat && viewItem == tag_editable",
+          "when": "view == logmagnifier-adb-devices && viewItem == tag_editable",
           "group": "inline"
         },
         {

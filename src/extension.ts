@@ -8,9 +8,9 @@ import { HighlightService } from './services/HighlightService';
 import { ResultCountService } from './services/ResultCountService';
 import { Logger } from './services/Logger';
 import { CommandManager } from './services/CommandManager';
-import { LogcatService } from './services/LogcatService';
-import { LogcatTreeProvider } from './views/LogcatTreeProvider';
-import { LogcatCommandManager } from './services/LogcatCommandManager';
+import { AdbService } from './services/AdbService';
+import { AdbDeviceTreeProvider } from './views/AdbDeviceTreeProvider';
+import { AdbCommandManager } from './services/AdbCommandManager';
 import { LogBookmarkService } from './services/LogBookmarkService';
 import { LogBookmarkWebviewProvider } from './views/LogBookmarkWebviewProvider';
 import { LogBookmarkCommandManager } from './services/LogBookmarkCommandManager';
@@ -68,13 +68,13 @@ export function activate(context: vscode.ExtensionContext) {
 	// Initialize Command Manager (Handles all command registrations)
 	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, quickAccessProvider, logger, wordTreeView, regexTreeView);
 
-	// ADB Logcat
-	const logcatService = new LogcatService(logger);
-	const logcatTreeProvider = new LogcatTreeProvider(logcatService);
-	vscode.window.registerTreeDataProvider(Constants.Views.ADBLogcat, logcatTreeProvider);
-	new LogcatCommandManager(context, logcatService, logcatTreeProvider);
+	// ADB Devices
+	const adbService = new AdbService(logger);
+	const adbDeviceTreeProvider = new AdbDeviceTreeProvider(adbService);
+	vscode.window.registerTreeDataProvider(Constants.Views.ADBDevices, adbDeviceTreeProvider);
+	new AdbCommandManager(context, adbService, adbDeviceTreeProvider);
 
-	// Deferred initialization is now handled lazily by LogcatTreeProvider.getChildren()
+	// Deferred initialization is now handled lazily by AdbDeviceTreeProvider.getChildren()
 
 	// Log Bookmark
 	const bookmarkService = new LogBookmarkService(context);

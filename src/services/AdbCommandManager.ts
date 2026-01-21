@@ -1,16 +1,16 @@
 
 import * as vscode from 'vscode';
-import { LogcatService } from './LogcatService';
-import { LogcatTreeProvider } from '../views/LogcatTreeProvider';
-import { AdbDevice, LogcatSession, LogcatTag, LogPriority, ControlActionItem, ControlDeviceActionItem } from '../models/LogcatModels';
+import { AdbService } from './AdbService';
+import { AdbDeviceTreeProvider } from '../views/AdbDeviceTreeProvider';
+import { AdbDevice, LogcatSession, LogcatTag, LogPriority, ControlActionItem, ControlDeviceActionItem } from '../models/AdbModels';
 import * as crypto from 'crypto';
 import { Constants } from '../constants';
 
-export class LogcatCommandManager {
+export class AdbCommandManager {
     constructor(
         private context: vscode.ExtensionContext,
-        private logcatService: LogcatService,
-        private treeProvider: LogcatTreeProvider
+        private adbService: AdbService,
+        private treeProvider: AdbDeviceTreeProvider
     ) {
         this.registerCommands();
     }
@@ -29,7 +29,7 @@ export class LogcatCommandManager {
             }
 
             if (!device) { return; }
-            const existingSessions = this.logcatService.getSessions();
+            const existingSessions = this.adbService.getSessions();
             const defaultName = `Session ${existingSessions.length + 1}`;
 
             const name = await vscode.window.showInputBox({
@@ -39,40 +39,40 @@ export class LogcatCommandManager {
                 valueSelection: [0, defaultName.length]
             });
             if (name) {
-                this.logcatService.createSession(name, device);
+                this.adbService.createSession(name, device);
             }
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.StartLogcatSession, async (session: LogcatSession) => {
             if (session) {
-                await this.logcatService.startSession(session.id);
+                await this.adbService.startSession(session.id);
             }
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.StopLogcatSession, async (session: LogcatSession) => {
             if (session) {
-                this.logcatService.stopSession(session.id);
+                this.adbService.stopSession(session.id);
             }
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RemoveLogcatSession, async (session: LogcatSession) => {
             if (session) {
                 if (session.isRunning) {
-                    this.logcatService.stopSession(session.id);
+                    this.adbService.stopSession(session.id);
                 }
-                this.logcatService.removeSession(session.id);
+                this.adbService.removeSession(session.id);
             }
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.SessionEnableTimeFilter, async (session: LogcatSession) => {
             if (session) {
-                this.logcatService.toggleSessionTimeFilter(session.id);
+                this.adbService.toggleSessionTimeFilter(session.id);
             }
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.SessionDisableTimeFilter, async (session: LogcatSession) => {
             if (session) {
-                this.logcatService.toggleSessionTimeFilter(session.id);
+                this.adbService.toggleSessionTimeFilter(session.id);
             }
         }));
 
@@ -88,7 +88,7 @@ export class LogcatCommandManager {
             if (input) {
                 const tag = this.parseTagInput(input);
                 if (tag) {
-                    this.logcatService.addTag(session.id, tag);
+                    this.adbService.addTag(session.id, tag);
                 } else {
                     vscode.window.showErrorMessage('Invalid Tag format. Use "Tag" or "Tag:Priority" (V, D, I, W, E, F, S)');
                 }
@@ -100,7 +100,7 @@ export class LogcatCommandManager {
             // But validation logic "viewItem == tag_editable" ensures we only call this when valid.
             // However, we need the sessionId to update it.
             // We can find the session by tag.
-            const session = this.logcatService.getSessions().find(s => s.tags.find(t => t.id === tag.id));
+            const session = this.adbService.getSessions().find(s => s.tags.find(t => t.id === tag.id));
             if (!session) { return; }
 
             const current = `${tag.name}:${tag.priority}`;
@@ -115,15 +115,15 @@ export class LogcatCommandManager {
                     // Update existing tag id
                     newTag.id = tag.id;
                     newTag.isEnabled = tag.isEnabled;
-                    this.logcatService.updateTag(session.id, newTag);
+                    this.adbService.updateTag(session.id, newTag);
                 }
             }
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RemoveLogcatTag, async (tag: LogcatTag) => {
-            const session = this.logcatService.getSessions().find(s => s.tags.find(t => t.id === tag.id));
+            const session = this.adbService.getSessions().find(s => s.tags.find(t => t.id === tag.id));
             if (!session) { return; }
-            this.logcatService.removeTag(session.id, tag.id);
+            this.adbService.removeTag(session.id, tag.id);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.PickTargetApp, async (item: any) => {
@@ -131,8 +131,8 @@ export class LogcatCommandManager {
             const device = item.device;
             if (!device) { return; }
 
-            const runningApps = await this.logcatService.getRunningApps(device.id);
-            const thirdPartyPackages = await this.logcatService.getThirdPartyPackages(device.id);
+            const runningApps = await this.adbService.getRunningApps(device.id);
+            const thirdPartyPackages = await this.adbService.getThirdPartyPackages(device.id);
 
             const quickPickItems: vscode.QuickPickItem[] = [];
 
@@ -187,7 +187,7 @@ export class LogcatCommandManager {
             });
 
             if (picked) {
-                this.logcatService.setTargetApp(device, picked.label);
+                this.adbService.setTargetApp(device, picked.label);
             }
         }));
 
@@ -199,7 +199,7 @@ export class LogcatCommandManager {
                 );
                 if (answer !== 'Yes') { return; }
 
-                const success = await this.logcatService.uninstallApp(item.device.id, item.device.targetApp);
+                const success = await this.adbService.uninstallApp(item.device.id, item.device.targetApp);
                 if (success) {
                     vscode.window.showInformationMessage('Uninstall completed. Please refresh the device list.');
                     this.treeProvider.refreshDevices(); // Proactive refresh
@@ -217,7 +217,7 @@ export class LogcatCommandManager {
                 );
                 if (answer !== 'Yes') { return; }
 
-                const success = await this.logcatService.clearAppStorage(item.device.id, item.device.targetApp);
+                const success = await this.adbService.clearAppStorage(item.device.id, item.device.targetApp);
                 if (success) {
                     vscode.window.showInformationMessage('Clear storage completed. Please refresh if needed.');
                 } else {
@@ -228,7 +228,7 @@ export class LogcatCommandManager {
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlClearCache, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
-                const success = await this.logcatService.clearAppCache(item.device.id, item.device.targetApp);
+                const success = await this.adbService.clearAppCache(item.device.id, item.device.targetApp);
                 // Clear cache might not return "Success" explicitly in stdout so we trust the boolean Result
                 if (success) {
                     vscode.window.showInformationMessage('Clear cache completed. Please refresh if needed.');
@@ -241,7 +241,7 @@ export class LogcatCommandManager {
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlDumpsys, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 try {
-                    const result = await this.logcatService.runDumpsysPackage(item.device.id, item.device.targetApp);
+                    const result = await this.adbService.runDumpsysPackage(item.device.id, item.device.targetApp);
                     if (result) {
                         // Create a URI with a unique title: "Dumpsys pkg: <package> (<HMS>)"
                         const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
@@ -270,7 +270,7 @@ export class LogcatCommandManager {
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlDumpsysMeminfo, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 try {
-                    const result = await this.logcatService.runDumpsysMeminfo(item.device.id, item.device.targetApp);
+                    const result = await this.adbService.runDumpsysMeminfo(item.device.id, item.device.targetApp);
                     if (result) {
                         // Create a URI with a unique title: "Dumpsys mem: <package> (<HMS>)"
                         const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
@@ -299,7 +299,7 @@ export class LogcatCommandManager {
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlDumpsysActivity, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 try {
-                    const result = await this.logcatService.runDumpsysActivity(item.device.id, item.device.targetApp);
+                    const result = await this.adbService.runDumpsysActivity(item.device.id, item.device.targetApp);
                     if (result) {
                         // Create a URI with a unique title: "Dumpsys act: <package> (<HMS>)"
                         const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
@@ -335,7 +335,7 @@ export class LogcatCommandManager {
                 const filename = `screenshot_${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}.png`;
                 const localPath = path.join(tmpDir, filename);
 
-                const success = await this.logcatService.captureScreenshot(item.device.id, localPath);
+                const success = await this.adbService.captureScreenshot(item.device.id, localPath);
                 if (success) {
                     // Open the image
                     const uri = vscode.Uri.file(localPath);
@@ -348,7 +348,7 @@ export class LogcatCommandManager {
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlStartScreenRecord, async (item: ControlDeviceActionItem) => {
             if (item && item.device) {
-                const success = await this.logcatService.startRecording(item.device.id);
+                const success = await this.adbService.startRecording(item.device.id);
                 if (success) {
                     vscode.window.showInformationMessage('Recording started... (Max 3 mins)');
                 }
@@ -357,13 +357,13 @@ export class LogcatCommandManager {
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlStopScreenRecord, async (item: ControlDeviceActionItem) => {
             if (item && item.device) {
-                await this.logcatService.stopRecording(item.device.id);
+                await this.adbService.stopRecording(item.device.id);
             }
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlToggleShowTouches, async (item: ControlDeviceActionItem) => {
             if (item && item.device) {
-                await this.logcatService.toggleShowTouches(item.device.id);
+                await this.adbService.toggleShowTouches(item.device.id);
             }
         }));
     }

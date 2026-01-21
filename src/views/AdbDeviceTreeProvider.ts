@@ -1,18 +1,19 @@
 
 import * as vscode from 'vscode';
-import { LogcatService } from '../services/LogcatService';
-import { AdbDevice, LogcatSession, LogcatTag, LogcatTreeItem, TargetAppItem, SessionGroupItem, ControlAppItem, ControlActionItem, DumpsysGroupItem, ControlDeviceItem, ControlDeviceActionItem, MessageItem } from '../models/LogcatModels';
+
+import { AdbService } from '../services/AdbService';
+import { AdbDevice, LogcatSession, LogcatTag, AdbTreeItem, TargetAppItem, SessionGroupItem, ControlAppItem, ControlActionItem, DumpsysGroupItem, ControlDeviceItem, ControlDeviceActionItem, MessageItem } from '../models/AdbModels';
 
 
-export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<LogcatTreeItem | undefined | null | void> = new vscode.EventEmitter<LogcatTreeItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<LogcatTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+export class AdbDeviceTreeProvider implements vscode.TreeDataProvider<AdbTreeItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<AdbTreeItem | undefined | null | void> = new vscode.EventEmitter<AdbTreeItem | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<AdbTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private devices: AdbDevice[] = [];
     private initialized = false;
 
-    constructor(private logcatService: LogcatService) {
-        this.logcatService.onDidChangeSessions(() => this.refresh());
+    constructor(private adbService: AdbService) {
+        this.adbService.onDidChangeSessions(() => this.refresh());
     }
 
     public initialize() {
@@ -24,16 +25,16 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
     }
 
     refresh(): void {
-        this._onDidChangeTreeData.fire();
+        this._onDidChangeTreeData.fire(undefined);
     }
 
     async refreshDevices(): Promise<void> {
-        this.devices = await this.logcatService.getDevices();
+        this.devices = await this.adbService.getDevices();
         this.initialized = true;
         this.refresh();
     }
 
-    getTreeItem(element: LogcatTreeItem): vscode.TreeItem {
+    getTreeItem(element: AdbTreeItem): vscode.TreeItem {
         if (this.isDevice(element)) {
             const item = new vscode.TreeItem(`${element.model || 'Unknown'} (${element.id})`, vscode.TreeItemCollapsibleState.Expanded);
             item.description = element.type;
@@ -133,7 +134,7 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
             item.iconPath = new vscode.ThemeIcon('tag');
 
             // Find parent session
-            const session = this.logcatService.getSessions().find(s => s.tags.includes(element));
+            const session = this.adbService.getSessions().find(s => s.tags.includes(element));
             if (session && session.isRunning) {
                 item.contextValue = 'tag_readonly';
                 item.description = '(Locked)';
@@ -158,8 +159,8 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
                 };
                 return item;
             } else if (element.actionType === 'screenRecord') {
-                const isRecording = this.logcatService.isDeviceRecording(element.device.id);
-                const isStopping = this.logcatService.isDeviceStopping(element.device.id);
+                const isRecording = this.adbService.isDeviceRecording(element.device.id);
+                const isStopping = this.adbService.isDeviceStopping(element.device.id);
 
                 let label = 'Screen Record';
                 let icon = new vscode.ThemeIcon('record');
@@ -225,11 +226,11 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
         return new vscode.TreeItem('Unknown');
     }
 
-    getChildren(element?: LogcatTreeItem): vscode.ProviderResult<LogcatTreeItem[]> {
+    getChildren(element?: AdbTreeItem): vscode.ProviderResult<AdbTreeItem[]> {
         if (!element) {
             if (!this.initialized) {
                 this.initialized = true;
-                return this.logcatService.getDevices().then(devices => {
+                return this.adbService.getDevices().then(devices => {
                     this.devices = devices;
                     if (this.devices.length === 0) {
                         return [{ type: 'message', message: 'No devices connected' } as MessageItem];
@@ -243,7 +244,7 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
             return this.devices;
         } else if (this.isDevice(element)) {
             // Return TargetApp, potentially ControlApp, ControlDevice, and SessionGroup
-            const children: LogcatTreeItem[] = [
+            const children: AdbTreeItem[] = [
                 { type: 'targetApp', device: element } as TargetAppItem
             ];
 
@@ -271,7 +272,7 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
             ];
         } else if (this.isControlDevice(element)) {
             return (async () => {
-                const showTouchesState = await this.logcatService.getShowTouchesState(element.device.id);
+                const showTouchesState = await this.adbService.getShowTouchesState(element.device.id);
                 return [
                     { type: 'controlDeviceAction', actionType: 'screenshot', device: element.device } as ControlDeviceActionItem,
                     { type: 'controlDeviceAction', actionType: 'screenRecord', device: element.device } as ControlDeviceActionItem,
@@ -279,7 +280,7 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
                 ];
             })();
         } else if (this.isSessionGroup(element)) {
-            return this.logcatService.getSessions().filter(s => s.device.id === element.device.id);
+            return this.adbService.getSessions().filter(s => s.device.id === element.device.id);
         } else if (this.isSession(element)) {
             return element.tags;
         }
@@ -287,47 +288,47 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
     }
 
     // Type guards
-    private isDevice(element: LogcatTreeItem): element is AdbDevice {
+    private isDevice(element: AdbTreeItem): element is AdbDevice {
         return 'id' in element && 'type' in element && 'model' in element && !('priority' in element) && !('tags' in element);
     }
 
-    private isTargetApp(element: LogcatTreeItem): element is TargetAppItem {
+    private isTargetApp(element: AdbTreeItem): element is TargetAppItem {
         return 'type' in element && element.type === 'targetApp';
     }
 
-    private isSessionGroup(element: LogcatTreeItem): element is SessionGroupItem {
+    private isSessionGroup(element: AdbTreeItem): element is SessionGroupItem {
         return 'type' in element && element.type === 'sessionGroup';
     }
 
-    private isSession(element: LogcatTreeItem): element is LogcatSession {
+    private isSession(element: AdbTreeItem): element is LogcatSession {
         return 'tags' in element && 'device' in element && 'isRunning' in element;
     }
 
-    private isTag(element: LogcatTreeItem): element is LogcatTag {
+    private isTag(element: AdbTreeItem): element is LogcatTag {
         return 'priority' in element && 'isEnabled' in element && 'name' in element;
     }
 
-    private isControlApp(element: LogcatTreeItem): element is ControlAppItem {
+    private isControlApp(element: AdbTreeItem): element is ControlAppItem {
         return 'type' in element && element.type === 'controlApp';
     }
 
-    private isDumpsysGroup(element: LogcatTreeItem): element is DumpsysGroupItem {
+    private isDumpsysGroup(element: AdbTreeItem): element is DumpsysGroupItem {
         return 'type' in element && element.type === 'dumpsysGroup';
     }
 
-    private isControlAction(element: LogcatTreeItem): element is ControlActionItem {
+    private isControlAction(element: AdbTreeItem): element is ControlActionItem {
         return 'type' in element && element.type === 'controlAction';
     }
 
-    private isControlDevice(element: LogcatTreeItem): element is ControlDeviceItem {
+    private isControlDevice(element: AdbTreeItem): element is ControlDeviceItem {
         return 'type' in element && element.type === 'controlDevice';
     }
 
-    private isControlDeviceAction(element: LogcatTreeItem): element is ControlDeviceActionItem {
+    private isControlDeviceAction(element: AdbTreeItem): element is ControlDeviceActionItem {
         return 'type' in element && element.type === 'controlDeviceAction';
     }
 
-    private isMessage(element: LogcatTreeItem): element is MessageItem {
+    private isMessage(element: AdbTreeItem): element is MessageItem {
         return 'type' in element && element.type === 'message';
     }
 }

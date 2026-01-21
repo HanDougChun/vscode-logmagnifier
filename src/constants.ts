@@ -108,7 +108,7 @@ export const Constants = {
         ImportRegexFilters: 'logmagnifier.importRegexFilters',
         ManageProfiles: 'logmagnifier.manageProfiles',
 
-        // ADB Logcat
+        // ADB Devices
         RefreshDevices: 'logmagnifier.refreshDevices',
         AddLogcatSession: 'logmagnifier.addLogcatSession',
         StartLogcatSession: 'logmagnifier.startLogcatSession',
@@ -173,7 +173,7 @@ export const Constants = {
         QuickAccess: 'logmagnifier-quick-access',
         Filters: 'logmagnifier-filters',
         RegexFilters: 'logmagnifier-regex-filters',
-        ADBLogcat: 'logmagnifier-adb-logcat',
+        ADBDevices: 'logmagnifier-adb-devices',
         Bookmark: 'logmagnifier-bookmark',
     },
 

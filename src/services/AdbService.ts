@@ -1,12 +1,12 @@
 
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
-import { AdbDevice, LogcatSession, LogcatTag, LogPriority } from '../models/LogcatModels';
+import { AdbDevice, LogcatSession, LogcatTag, LogPriority } from '../models/AdbModels';
 import * as crypto from 'crypto';
 
 import { Logger } from './Logger';
 
-export class LogcatService {
+export class AdbService {
     private sessions: Map<string, LogcatSession> = new Map();
     private processes: Map<string, cp.ChildProcess> = new Map();
     private buffers: Map<string, string[]> = new Map();
