@@ -1150,11 +1150,12 @@
         },
         {
           "command": "logmagnifier.addBookmark",
+          "when": "resourceScheme != output && resourceScheme != debug",
           "group": "logmagnifier@1"
         },
         {
           "command": "logmagnifier.addSelectionMatchesToBookmark",
-          "when": "editorHasSelection",
+          "when": "editorHasSelection && resourceScheme != output && resourceScheme != debug",
           "group": "logmagnifier@2"
         },
         {
@@ -1438,11 +1439,6 @@
           "command": "logmagnifier.removeBookmark",
           "when": "view == logmagnifier-bookmark && viewItem == bookmark",
           "group": "inline"
-        },
-        {
-          "command": "logmagnifier.addSelectionMatchesToBookmark",
-          "title": "Add matches to bookmark",
-          "icon": "$(bookmark)"
         }
       ]
     }
