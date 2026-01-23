@@ -550,7 +550,7 @@ export class FilterManager {
                 // Optionally show a UI message? For now, we just abort.
                 // Since this is a void method called from drop handler, we can't easily bubble up error message to UI 
                 // without changing architecture, but logging is good.
-                vscode.window.showWarningMessage(`Filter '${activeFilter.keyword}' already exists in group '${targetGroup.name}'.`);
+                vscode.window.showWarningMessage(Constants.Messages.Warn.FilterAlreadyExistsInGroup.replace('{0}', activeFilter.keyword).replace('{1}', targetGroup.name));
                 return;
             }
         }
@@ -733,7 +733,7 @@ export class FilterManager {
                 this.logger.info(`Import completed: ${addedCount} ${mode} filter groups added.`);
                 return { count: addedCount };
             } else {
-                throw new Error('Invalid filter data format: expected an object with a "groups" array. Legacy array format is no longer supported.');
+                throw new Error(Constants.Messages.Error.ImportInvalidFormat);
             }
         } catch (e: any) {
             this.logger.error(`Import failed: ${e.message}`);

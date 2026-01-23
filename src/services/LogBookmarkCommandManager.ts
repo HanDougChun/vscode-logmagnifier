@@ -21,9 +21,9 @@ export class LogBookmarkCommandManager {
         context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.JumpToBookmark, (item: BookmarkItem) => this.jumpToBookmark(item)));
         context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.AddMatchListToBookmark, (filter: FilterItem) => this.addMatchListToBookmark(filter)));
         context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.AddSelectionMatchesToBookmark, () => this.addSelectionMatchesToBookmark()));
-        context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.removeBookmarkFile', (uri: vscode.Uri) => this.removeBookmarkFile(uri)));
-        context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.copyBookmarkFile', (uri: vscode.Uri, withLineNumber: boolean) => this.copyBookmarkFile(uri, withLineNumber)));
-        context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.openBookmarkFile', (uri: vscode.Uri, withLineNumber: boolean) => this.openBookmarkFile(uri, withLineNumber)));
+        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RemoveBookmarkFile, (uri: vscode.Uri) => this.removeBookmarkFile(uri)));
+        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.CopyBookmarkFile, (uri: vscode.Uri, withLineNumber: boolean) => this.copyBookmarkFile(uri, withLineNumber)));
+        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.OpenBookmarkFile, (uri: vscode.Uri, withLineNumber: boolean) => this.openBookmarkFile(uri, withLineNumber)));
     }
 
     private addBookmark() {
@@ -44,7 +44,7 @@ export class LogBookmarkCommandManager {
 
         const selection = editor.selection;
         if (selection.isEmpty) {
-            vscode.window.showInformationMessage('Please select a text to search for matches.');
+            vscode.window.showInformationMessage(Constants.Messages.Info.SelectTextToSearch);
             return;
         }
 
@@ -81,12 +81,12 @@ export class LogBookmarkCommandManager {
         if (matchedLines.length > 0) {
             const addedCount = this.bookmarkService.addBookmarks(editor, matchedLines, { matchText: selectedText });
             if (matchedLines.length >= MAX_MATCHES_TO_ADD) {
-                vscode.window.showInformationMessage(`Added ${addedCount} bookmarks (Limited to first ${MAX_MATCHES_TO_ADD} matches).`);
+                vscode.window.showInformationMessage(Constants.Messages.Info.AddedBookmarksLimited.replace('{0}', addedCount.toString()).replace('{1}', MAX_MATCHES_TO_ADD.toString()));
             } else {
-                vscode.window.showInformationMessage(`Added ${addedCount} bookmarks.`);
+                vscode.window.showInformationMessage(Constants.Messages.Info.AddedBookmarks.replace('{0}', addedCount.toString()));
             }
         } else {
-            vscode.window.showInformationMessage('No matches found in the active editor.');
+            vscode.window.showInformationMessage(Constants.Messages.Info.NoMatchesFound);
         }
     }
 
@@ -95,7 +95,7 @@ export class LogBookmarkCommandManager {
 
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
-            vscode.window.showErrorMessage('No active text editor found.');
+            vscode.window.showErrorMessage(Constants.Messages.Error.NoActiveEditor);
             return;
         }
 
@@ -123,9 +123,9 @@ export class LogBookmarkCommandManager {
         }
 
         if (count > 0) {
-            vscode.window.showInformationMessage(`Added ${count} bookmarks.`);
+            vscode.window.showInformationMessage(Constants.Messages.Info.AddedBookmarks.replace('{0}', count.toString()));
         } else {
-            vscode.window.showInformationMessage('No matches found in the active editor.');
+            vscode.window.showInformationMessage(Constants.Messages.Info.NoMatchesFound);
         }
     }
 
@@ -145,7 +145,7 @@ export class LogBookmarkCommandManager {
             editor.selection = new vscode.Selection(range.start, range.start);
             this.highlightService.flashLine(editor, item.line, Constants.Configuration.Bookmark.HighlightColor);
         } catch (e) {
-            vscode.window.showErrorMessage(`Failed to open bookmark: ${e}`);
+            vscode.window.showErrorMessage(Constants.Messages.Error.OpenBookmarkFailed.replace('{0}', e as string));
         }
     }
 
@@ -163,7 +163,7 @@ export class LogBookmarkCommandManager {
         if (bookmarks && bookmarks.length > 0) {
             const content = bookmarks.map(b => withLineNumber ? `Line ${b.line + 1}: ${b.content}` : b.content).join('\n');
             await vscode.env.clipboard.writeText(content);
-            vscode.window.showInformationMessage('Bookmarks copied to clipboard.');
+            vscode.window.showInformationMessage(Constants.Messages.Info.BookmarksCopied);
         }
     }
 
@@ -179,7 +179,7 @@ export class LogBookmarkCommandManager {
 
             // Create a specialized URI for the untitled document to set its name
             // The format is untitled:<path> where the last segment is used as the name
-            const untitledUri = vscode.Uri.parse(`untitled:${docName}`);
+            const untitledUri = vscode.Uri.parse(`${Constants.Schemes.Untitled}:${docName}`);
 
             try {
                 const doc = await vscode.workspace.openTextDocument(untitledUri);
@@ -195,7 +195,7 @@ export class LogBookmarkCommandManager {
                     editBuilder.replace(fullRange, content);
                 });
             } catch (e) {
-                vscode.window.showErrorMessage(`Failed to open bookmark tab: ${e}`);
+                vscode.window.showErrorMessage(Constants.Messages.Error.OpenBookmarkTabFailed.replace('{0}', e as string));
             }
         }
     }

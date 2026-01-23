@@ -5,6 +5,7 @@ import { AdbDevice, LogcatSession, LogcatTag, LogPriority } from '../models/AdbM
 import * as crypto from 'crypto';
 
 import { Logger } from './Logger';
+import { Constants } from '../constants';
 
 export class AdbService {
     private sessions: Map<string, LogcatSession> = new Map();
@@ -26,7 +27,7 @@ export class AdbService {
 
 
     private getAdbPath(): string {
-        return vscode.workspace.getConfiguration('logmagnifier').get<string>('adbPath') || 'adb';
+        return vscode.workspace.getConfiguration(Constants.Configuration.Section).get<string>(Constants.Configuration.Adb.Path) || Constants.Defaults.AdbPath;
     }
 
     public async getDevices(): Promise<AdbDevice[]> {
@@ -285,7 +286,7 @@ export class AdbService {
 
         try {
             const adbPath = this.getAdbPath();
-            const defaultOptions = vscode.workspace.getConfiguration('logmagnifier').get<string>('adbLogcatDefaultOptions') || '-v threadtime';
+            const defaultOptions = vscode.workspace.getConfiguration(Constants.Configuration.Section).get<string>(Constants.Configuration.Adb.DefaultOptions) || Constants.Defaults.AdbDefaultOptions;
 
             // basic args: -s <device> logcat
             const args = ['-s', session.device.id, 'logcat'];
@@ -327,7 +328,7 @@ export class AdbService {
                     this.logger.info(`[ADB] Resolved PID for ${session.device.targetApp}: ${pid}`);
                     args.push(`--pid=${pid}`);
                 } else {
-                    vscode.window.showWarningMessage(`App ${session.device.targetApp} is not running. Starting logcat without PID filter.`);
+                    vscode.window.showWarningMessage(Constants.Messages.Warn.AppNotRunning.replace('{0}', session.device.targetApp));
                 }
             }
 
@@ -405,14 +406,14 @@ export class AdbService {
 
             child.on('error', (err) => {
                 this.logger.error(`[ADB] Failed to start logcat process: ${err.message}`);
-                vscode.window.showErrorMessage(`Failed to start logcat process: ${err.message}`);
+                vscode.window.showErrorMessage(Constants.Messages.Error.LogcatStartFailed.replace('{0}', err.message));
                 session.isRunning = false;
                 this._onDidChangeSessions.fire();
             });
 
         } catch (error) {
             this.logger.error(`[ADB] Exception starting logcat: ${error}`);
-            vscode.window.showErrorMessage(`Failed to start logcat: ${error}`);
+            vscode.window.showErrorMessage(Constants.Messages.Error.LogcatStartFailed.replace('{0}', error as string));
         }
     }
 
@@ -724,7 +725,7 @@ export class AdbService {
             this.logger.error(`[ADB] Failed to start screenrecord: ${err.message}`);
             this.recordingProcesses.delete(deviceId);
             this._onDidChangeSessions.fire();
-            vscode.window.showErrorMessage(`Screen recording failed: ${err.message}`);
+            vscode.window.showErrorMessage(Constants.Messages.Error.RecordingFailed.replace('{0}', err.message));
         });
 
         child.on('close', async (code) => {

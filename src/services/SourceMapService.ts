@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { Constants } from '../constants';
 
 interface SourceMapping {
     sourceUri: vscode.Uri;
@@ -106,7 +107,7 @@ export class SourceMapService {
         const now = Date.now();
         // Check validity (same file, same line, within 10 seconds)
         // Use fsPath for file URIs to avoid case/encoding mismatches
-        const isSameUri = (this.pendingNavigation.uri.scheme === 'file' && uri.scheme === 'file')
+        const isSameUri = (this.pendingNavigation.uri.scheme === Constants.Schemes.File && uri.scheme === Constants.Schemes.File)
             ? this.pendingNavigation.uri.fsPath === uri.fsPath
             : this.pendingNavigation.uri.toString() === uri.toString();
 

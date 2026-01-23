@@ -47,7 +47,7 @@ export class CommandManager {
             if (name) {
                 const group = this.filterManager.addGroup(name, false);
                 if (!group) {
-                    vscode.window.showErrorMessage(`Word Filter Group '${name}' already exists.`);
+                    vscode.window.showErrorMessage(Constants.Messages.Error.WordFilterGroupExists.replace('{0}', name));
                 }
             }
         }));
@@ -61,7 +61,7 @@ export class CommandManager {
             if (name) {
                 const group = this.filterManager.addGroup(name, true);
                 if (!group) {
-                    vscode.window.showErrorMessage(`Regex Filter Group '${name}' already exists.`);
+                    vscode.window.showErrorMessage(Constants.Messages.Error.RegexFilterGroupExists.replace('{0}', name));
                 }
             }
         }));
@@ -175,7 +175,7 @@ export class CommandManager {
             const type = Constants.FilterTypes.Include as FilterType;
             const filter = this.filterManager.addFilter(targetGroupId, keyword, type, false);
             if (!filter) {
-                vscode.window.showErrorMessage(`Filter '${keyword}' (${type}) already exists in this group.`);
+                vscode.window.showErrorMessage(Constants.Messages.Error.FilterExistsInGroup.replace('{0}', keyword).replace('{1}', type));
             }
         }));
 
@@ -208,7 +208,7 @@ export class CommandManager {
 
             const filter = this.filterManager.addFilter(targetGroupId, pattern, Constants.FilterTypes.Include as FilterType, true, nickname);
             if (!filter) {
-                vscode.window.showErrorMessage(`Regex Filter with pattern '${pattern}' or nickname '${nickname}' already exists in this group.`);
+                vscode.window.showErrorMessage(Constants.Messages.Error.RegexFilterExists.replace('{0}', pattern).replace('{1}', nickname || ''));
             }
         }));
 
@@ -216,7 +216,7 @@ export class CommandManager {
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.AddSelectionToFilter, async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor || editor.selection.isEmpty) {
-                vscode.window.showInformationMessage('Please select some text first.');
+                vscode.window.showInformationMessage(Constants.Messages.Info.SelectTextFirst);
                 return;
             }
 
@@ -257,7 +257,7 @@ export class CommandManager {
                         // Check for duplicate keyword regardless of type
                         const existingFilter = targetGroup.filters.find(f => f.keyword.toLowerCase() === selectedText.toLowerCase());
                         if (existingFilter) {
-                            vscode.window.showErrorMessage(`Filter '${selectedText}' already exists in group '${targetGroup.name}'.`);
+                            vscode.window.showWarningMessage(Constants.Messages.Warn.FilterAlreadyExistsInGroup.replace('{0}', selectedText).replace('{1}', targetGroup.name));
                             return;
                         }
                     }
@@ -278,7 +278,7 @@ export class CommandManager {
                         // Check for duplicate in this existing group as well, just in case
                         const existingFilter = existingGroup.filters.find(f => f.keyword.toLowerCase() === selectedText.toLowerCase());
                         if (existingFilter) {
-                            vscode.window.showErrorMessage(`Filter '${selectedText}' already exists in group '${existingGroup.name}'.`);
+                            vscode.window.showWarningMessage(Constants.Messages.Warn.FilterAlreadyExistsInGroup.replace('{0}', selectedText).replace('{1}', existingGroup.name));
                             return;
                         }
                     }
@@ -294,7 +294,7 @@ export class CommandManager {
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RemoveMatchesWithSelection, async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor || editor.selection.isEmpty) {
-                vscode.window.showInformationMessage('Please select some text first.');
+                vscode.window.showInformationMessage(Constants.Messages.Info.SelectTextFirst);
                 return;
             }
 
@@ -322,7 +322,7 @@ export class CommandManager {
             }
 
             if (matchCount === 0) {
-                vscode.window.showInformationMessage(`No matches found for '${selectedText}'.`);
+                vscode.window.showInformationMessage(Constants.Messages.Info.NoMatchesForText.replace('{0}', selectedText));
                 return;
             }
 
@@ -332,7 +332,7 @@ export class CommandManager {
 
             if (matchCount > removeMatchesMaxLines) {
                 const response = await vscode.window.showWarningMessage(
-                    `Are you sure you want to remove ${matchCount} lines matching '${selectedText}'?`,
+                    Constants.Messages.Warn.RemoveMatchesConfirm.replace('{0}', matchCount.toString()).replace('{1}', selectedText),
                     'Yes', 'No'
                 );
                 if (response !== 'Yes') {
@@ -346,11 +346,11 @@ export class CommandManager {
             }
 
             await vscode.workspace.applyEdit(edits);
-            vscode.window.showInformationMessage(`Removed ${matchCount} lines matching '${selectedText}'.`);
+            vscode.window.showInformationMessage(Constants.Messages.Info.RemovedLines.replace('{0}', matchCount.toString()).replace('{1}', selectedText));
         }));
 
         // Command: Apply Json Pretty
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.applyJsonPretty', async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ApplyJsonPretty, async () => {
             await this.jsonPrettyService.execute();
         }));
 
@@ -399,9 +399,9 @@ export class CommandManager {
                 if (enabledFilters.length > 0) {
                     const text = enabledFilters.map(f => f.keyword).join('\n');
                     await vscode.env.clipboard.writeText(text);
-                    vscode.window.showInformationMessage(`Copied ${enabledFilters.length} items to clipboard.`);
+                    vscode.window.showInformationMessage(Constants.Messages.Info.CopiedItems.replace('{0}', enabledFilters.length.toString()));
                 } else {
-                    vscode.window.showInformationMessage('No enabled items to copy (excluded filters ignored).');
+                    vscode.window.showInformationMessage(Constants.Messages.Info.NoEnabledItems);
                 }
             }
         }));
@@ -413,7 +413,7 @@ export class CommandManager {
                 if (enabledFilters.length > 0) {
                     const text = enabledFilters.map(f => f.keyword).join(' '); // Use space as delimiter
                     await vscode.env.clipboard.writeText(text);
-                    vscode.window.showInformationMessage(`Copied ${enabledFilters.length} items to clipboard (single line).`);
+                    vscode.window.showInformationMessage(Constants.Messages.Info.CopiedItemsSingleLine.replace('{0}', enabledFilters.length.toString()));
                 } else {
                     vscode.window.showInformationMessage('No enabled items to copy (excluded filters ignored).');
                 }
@@ -427,7 +427,7 @@ export class CommandManager {
                 if (enabledFilters.length > 0) {
                     const text = enabledFilters.map(f => `tag:${f.keyword}`).join(' ');
                     await vscode.env.clipboard.writeText(text);
-                    vscode.window.showInformationMessage(`Copied ${enabledFilters.length} items as tags to clipboard.`);
+                    vscode.window.showInformationMessage(Constants.Messages.Info.CopiedItemsTags.replace('{0}', enabledFilters.length.toString()));
                 } else {
                     vscode.window.showInformationMessage('No enabled items to copy (excluded filters ignored).');
                 }
@@ -808,14 +808,14 @@ export class CommandManager {
 
                 // Confirm deletion
                 const confirm = await vscode.window.showWarningMessage(
-                    Constants.Prompts.ConfirmDeleteProfile.replace('{0}', profileName),
+                    Constants.Messages.Warn.ConfirmDeleteProfile.replace('{0}', profileName),
                     { modal: true },
                     'Delete'
                 );
 
                 if (confirm === 'Delete') {
                     await this.filterManager.deleteProfile(profileName);
-                    vscode.window.showInformationMessage(`Profile '${profileName}' deleted.`);
+                    vscode.window.showInformationMessage(Constants.Messages.Info.ProfileDeleted.replace('{0}', profileName));
 
                     // Refresh list
                     quickPick.hide();
@@ -841,9 +841,9 @@ export class CommandManager {
                         if (name) {
                             const success = await this.filterManager.createProfile(name);
                             if (success) {
-                                vscode.window.showInformationMessage(`Profile '${name}' created and activated.`);
+                                vscode.window.showInformationMessage(Constants.Messages.Info.ProfileCreated.replace('{0}', name));
                             } else {
-                                vscode.window.showErrorMessage(`Failed to create profile '${name}'.`);
+                                vscode.window.showErrorMessage(Constants.Messages.Error.ProfileCreateFailed.replace('{0}', name));
                             }
                         }
 
@@ -855,7 +855,7 @@ export class CommandManager {
                         });
                         if (name) {
                             await this.filterManager.saveProfile(name);
-                            vscode.window.showInformationMessage(`Profile duplicated as '${name}'.`);
+                            vscode.window.showInformationMessage(Constants.Messages.Info.ProfileDuplicated.replace('{0}', name));
                         }
 
                     } else {
@@ -864,7 +864,7 @@ export class CommandManager {
                         if (profileName !== activeProfile) {
                             quickPick.hide();
                             await this.filterManager.loadProfile(profileName);
-                            vscode.window.showInformationMessage(`Switched to profile '${profileName}'.`);
+                            vscode.window.showInformationMessage(Constants.Messages.Info.ProfileSwitched.replace('{0}', profileName));
                         } else {
                             // Already active
                             quickPick.hide();
@@ -903,7 +903,7 @@ export class CommandManager {
 
         const groups = this.filterManager.getGroups().filter(g => isRegex ? g.isRegex : !g.isRegex);
         if (groups.length === 0) {
-            vscode.window.showErrorMessage(`No ${isRegex ? 'Regex' : 'Word'} filter groups exist. Create a group first.`);
+            vscode.window.showErrorMessage(Constants.Messages.Error.NoFilterGroups.replace('{0}', isRegex ? 'Regex' : 'Word'));
             return undefined;
         }
         const selected = await vscode.window.showQuickPick(groups.map(g => ({ label: g.name, id: g.id })), { placeHolder: `Select ${isRegex ? 'Regex' : 'Word'} Filter Group` });
@@ -927,7 +927,7 @@ export class CommandManager {
             });
 
             if (activeGroups.length === 0) {
-                vscode.window.showWarningMessage(`No active ${filterType || 'filter'} groups selected.`);
+                vscode.window.showWarningMessage(Constants.Messages.Warn.NoActiveGroups.replace('{0}', filterType || 'filter'));
                 return;
             }
 
@@ -953,7 +953,7 @@ export class CommandManager {
             }
 
             if (!document && !filePathFromTab) {
-                vscode.window.showErrorMessage('No active file found. Please ensure a log file is open and visible.');
+                vscode.window.showErrorMessage(Constants.Messages.Error.NoActiveFile);
                 return;
             }
 
@@ -1037,14 +1037,14 @@ export class CommandManager {
                         }
                     }
                 } catch (error) {
-                    vscode.window.showErrorMessage(`Error applying filters: ${error}`);
+                    vscode.window.showErrorMessage(Constants.Messages.Error.ApplyFiltersError.replace('{0}', error as string));
                     return;
                 }
             });
 
             const message = `Filtered ${stats.processed.toLocaleString()} lines. Matched ${stats.matched.toLocaleString()} lines.`;
             if (stats.matched === 0) {
-                vscode.window.showWarningMessage(message + " Check your filter keywords (case-sensitive).");
+                vscode.window.showWarningMessage(Constants.Messages.Warn.EmptyImport.replace('{0}', message));
             } else {
                 const timeout = vscode.workspace.getConfiguration(Constants.Configuration.Section).get<number>(Constants.Configuration.StatusBarTimeout) || 5000;
                 vscode.window.setStatusBarMessage(message, timeout);
@@ -1189,9 +1189,9 @@ export class CommandManager {
         if (uri) {
             try {
                 fs.writeFileSync(uri.fsPath, filtersJson, 'utf8');
-                vscode.window.showInformationMessage(`${mode === 'word' ? 'Word' : 'Regex'} filters exported successfully to ${uri.fsPath}`);
+                vscode.window.showInformationMessage(Constants.Messages.Info.ExportSuccess.replace('{0}', mode === 'word' ? 'Word' : 'Regex').replace('{1}', uri.fsPath));
             } catch (err) {
-                vscode.window.showErrorMessage(`Failed to export filters: ${err}`);
+                vscode.window.showErrorMessage(Constants.Messages.Error.ExportFailed.replace('{0}', err as string));
             }
         }
     }
@@ -1203,7 +1203,7 @@ export class CommandManager {
 
         const filtersJson = this.filterManager.exportGroup(group.id);
         if (!filtersJson) {
-            vscode.window.showErrorMessage(`Failed to export group: ${group.name}`);
+            vscode.window.showErrorMessage(Constants.Messages.Error.ExportGroupFailed.replace('{0}', group.name));
             return;
         }
 
@@ -1227,9 +1227,9 @@ export class CommandManager {
         if (uri) {
             try {
                 fs.writeFileSync(uri.fsPath, filtersJson, 'utf8');
-                vscode.window.showInformationMessage(`Group '${group.name}' exported successfully to ${uri.fsPath}`);
+                vscode.window.showInformationMessage(Constants.Messages.Info.ExportGroupSuccess.replace('{0}', group.name).replace('{1}', uri.fsPath));
             } catch (err) {
-                vscode.window.showErrorMessage(`Failed to export group: ${err}`);
+                vscode.window.showErrorMessage(Constants.Messages.Error.ExportGroupFailed.replace('{0}', err as string));
             }
         }
     }
@@ -1258,14 +1258,14 @@ export class CommandManager {
                 const result = this.filterManager.importFilters(json, mode, overwrite);
 
                 if (result.error) {
-                    vscode.window.showErrorMessage(`Failed to import filters: ${result.error}`);
+                    vscode.window.showErrorMessage(Constants.Messages.Error.ImportFailed.replace('{0}', result.error));
                 } else if (result.count === 0) {
-                    vscode.window.showWarningMessage('No matching filters found in the selected file.');
+                    vscode.window.showWarningMessage(Constants.Messages.Warn.NoMatchingFilters);
                 } else {
-                    vscode.window.showInformationMessage(`Successfully imported ${result.count} ${mode === 'word' ? 'Word' : 'Regex'} filter groups.`);
+                    vscode.window.showInformationMessage(Constants.Messages.Info.ImportSuccess.replace('{0}', result.count.toString()).replace('{1}', mode === 'word' ? 'Word' : 'Regex'));
                 }
             } catch (err) {
-                vscode.window.showErrorMessage(`Failed to read filter file: ${err}`);
+                vscode.window.showErrorMessage(Constants.Messages.Error.ReadFilterFileFailed.replace('{0}', err as string));
             }
         }
     }
@@ -1331,10 +1331,10 @@ export class CommandManager {
                 // Flash line
                 this.highlightService.flashLine(sourceEditor, range.start.line);
             } catch (e) {
-                vscode.window.showErrorMessage(`Failed to jump to source: ${e}`);
+                vscode.window.showErrorMessage(Constants.Messages.Error.JumpToSourceFailed.replace('{0}', e as string));
             }
         } else {
-            vscode.window.showInformationMessage('No source mapping found for this line.');
+            vscode.window.showInformationMessage(Constants.Messages.Info.NoSourceMapping);
         }
     }
 }

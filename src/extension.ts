@@ -78,8 +78,8 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.languages.registerDefinitionProvider(
 			[
-				{ scheme: 'file', language: 'log' },
-				{ scheme: 'untitled', language: 'log' }
+				{ scheme: Constants.Schemes.File, language: 'log' },
+				{ scheme: Constants.Schemes.Untitled, language: 'log' }
 			],
 			new FilteredLogDefinitionProvider(sourceMapService)
 		)
@@ -146,7 +146,7 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
-			const largeFileOptimizations = vscode.workspace.getConfiguration('editor').get<boolean>('largeFileOptimizations');
+			const largeFileOptimizations = vscode.workspace.getConfiguration(Constants.Configuration.Editor.Section).get<boolean>(Constants.Configuration.Editor.LargeFileOptimizations);
 			logger.info(`Active editor changed to: ${fileName} (Scheme: ${scheme}, LargeFileOptimizations: ${largeFileOptimizations})`);
 
 			const counts = await highlightService.updateHighlights(editor);
@@ -165,7 +165,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 				// Standard VS Code limit for extensions is 50MB
 				try {
-					if (uri.scheme === 'file') {
+					if (uri.scheme === Constants.Schemes.File) {
 						const stats = fs.statSync(uri.fsPath);
 						const sizeMB = stats.size / (1024 * 1024);
 						if (sizeMB > 50) {
@@ -200,7 +200,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Update highlights when configuration changes (e.g. color)
 	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async e => {
-		if (e.affectsConfiguration('logmagnifier.regex.highlightColor') || e.affectsConfiguration('logmagnifier.regex.enableHighlight')) {
+		if (e.affectsConfiguration(`${Constants.Configuration.Section}.${Constants.Configuration.Regex.HighlightColor}`) ||
+			e.affectsConfiguration(`${Constants.Configuration.Section}.${Constants.Configuration.Regex.EnableHighlight}`)) {
 			highlightService.refreshDecorationType();
 			lastProcessedDoc = undefined; // Force update
 			if (vscode.window.activeTextEditor) {
@@ -214,9 +215,9 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		// Refresh Quick Access view if editor settings change
-		if (e.affectsConfiguration('editor.wordWrap') ||
-			e.affectsConfiguration('editor.minimap.enabled') ||
-			e.affectsConfiguration('editor.stickyScroll.enabled')) {
+		if (e.affectsConfiguration(`${Constants.Configuration.Editor.Section}.${Constants.Configuration.Editor.WordWrap}`) ||
+			e.affectsConfiguration(`${Constants.Configuration.Editor.Section}.${Constants.Configuration.Editor.MinimapEnabled}`) ||
+			e.affectsConfiguration(`${Constants.Configuration.Editor.Section}.${Constants.Configuration.Editor.StickyScrollEnabled}`)) {
 			quickAccessProvider.refresh();
 		}
 	}));
@@ -290,5 +291,5 @@ export function deactivate() {
 }
 
 function isSupportedScheme(uri: vscode.Uri): boolean {
-	return uri.scheme === 'file' || uri.scheme === 'untitled';
+	return uri.scheme === Constants.Schemes.File || uri.scheme === Constants.Schemes.Untitled;
 }

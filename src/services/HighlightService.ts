@@ -307,7 +307,7 @@ export class HighlightService implements vscode.Disposable {
                 // Optimization: Avoid showing message repeatedly? 
                 // VS Code suppresses duplicate notifications usually.
                 vscode.window.showErrorMessage(
-                    `Invalid filter pattern: "${filter.keyword}"`,
+                    Constants.Messages.Error.InvalidFilterPattern.replace('{0}', filter.keyword),
                     'Edit Filter',
                     'Disable Filter'
                 ).then(selection => {

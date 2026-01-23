@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { Logger } from './Logger';
 import { SourceMapService } from './SourceMapService';
+import { Constants } from '../constants';
 
 interface ExtractedJson {
     type: 'valid' | 'invalid' | 'incomplete';
@@ -29,13 +30,13 @@ export class JsonPrettyService {
             }
 
             if (!text || text.trim().length === 0) {
-                vscode.window.showInformationMessage('LogMagnifier: No text to process.');
+                vscode.window.showInformationMessage(Constants.Messages.Info.NoTextToProcess);
                 return;
             }
 
             const jsons = this.extractJsons(text);
             if (jsons.length === 0) {
-                vscode.window.showInformationMessage('LogMagnifier: No JSON-like content found in the selection.');
+                vscode.window.showInformationMessage(Constants.Messages.Info.NoJsonFound);
                 return;
             }
 
@@ -60,7 +61,7 @@ export class JsonPrettyService {
 
         } catch (error) {
             this.logger.error(`JsonPrettyService error: ${error}`);
-            vscode.window.showErrorMessage('LogMagnifier: Error processing JSON.');
+            vscode.window.showErrorMessage(Constants.Messages.Error.JsonProcessError);
         }
     }
 

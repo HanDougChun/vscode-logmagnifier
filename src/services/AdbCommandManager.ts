@@ -90,7 +90,7 @@ export class AdbCommandManager {
                 if (tag) {
                     this.adbService.addTag(session.id, tag);
                 } else {
-                    vscode.window.showErrorMessage('Invalid Tag format. Use "Tag" or "Tag:Priority" (V, D, I, W, E, F, S)');
+                    vscode.window.showErrorMessage(Constants.Messages.Error.InvalidTagFormat);
                 }
             }
         }));
@@ -194,17 +194,17 @@ export class AdbCommandManager {
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlUninstall, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 const answer = await vscode.window.showWarningMessage(
-                    Constants.Prompts.UninstallConfirm.replace('{0}', item.device.targetApp),
+                    Constants.Messages.Warn.UninstallConfirm.replace('{0}', item.device.targetApp),
                     'Yes', 'No'
                 );
                 if (answer !== 'Yes') { return; }
 
                 const success = await this.adbService.uninstallApp(item.device.id, item.device.targetApp);
                 if (success) {
-                    vscode.window.showInformationMessage('Uninstall completed. Please refresh the device list.');
+                    vscode.window.showInformationMessage(Constants.Messages.Info.UninstallCompleted);
                     this.treeProvider.refreshDevices(); // Proactive refresh
                 } else {
-                    vscode.window.showErrorMessage('Uninstall failed.');
+                    vscode.window.showErrorMessage(Constants.Messages.Error.UninstallFailed);
                 }
             }
         }));
@@ -212,16 +212,16 @@ export class AdbCommandManager {
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlClearStorage, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 const answer = await vscode.window.showWarningMessage(
-                    Constants.Prompts.ClearStorageConfirm.replace('{0}', item.device.targetApp),
+                    Constants.Messages.Warn.ClearStorageConfirm.replace('{0}', item.device.targetApp),
                     'Yes', 'No'
                 );
                 if (answer !== 'Yes') { return; }
 
                 const success = await this.adbService.clearAppStorage(item.device.id, item.device.targetApp);
                 if (success) {
-                    vscode.window.showInformationMessage('Clear storage completed. Please refresh if needed.');
+                    vscode.window.showInformationMessage(Constants.Messages.Info.ClearStorageCompleted);
                 } else {
-                    vscode.window.showErrorMessage('Clear storage failed.');
+                    vscode.window.showErrorMessage(Constants.Messages.Error.ClearStorageFailed);
                 }
             }
         }));
@@ -231,9 +231,9 @@ export class AdbCommandManager {
                 const success = await this.adbService.clearAppCache(item.device.id, item.device.targetApp);
                 // Clear cache might not return "Success" explicitly in stdout so we trust the boolean Result
                 if (success) {
-                    vscode.window.showInformationMessage('Clear cache completed. Please refresh if needed.');
+                    vscode.window.showInformationMessage(Constants.Messages.Info.ClearCacheCompleted);
                 } else {
-                    vscode.window.showErrorMessage('Clear cache failed (App might need to be debuggable).');
+                    vscode.window.showErrorMessage(Constants.Messages.Error.ClearCacheFailed);
                 }
             }
         }));
@@ -245,7 +245,7 @@ export class AdbCommandManager {
                     if (result) {
                         // Create a URI with a unique title: "Dumpsys pkg: <package> (<HMS>)"
                         const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
-                        const uri = vscode.Uri.from({ scheme: 'untitled', path: `Dumpsys pkg: ${item.device.targetApp} (${timestamp})` });
+                        const uri = vscode.Uri.from({ scheme: Constants.Schemes.Untitled, path: `Dumpsys pkg: ${item.device.targetApp} (${timestamp})` });
                         const doc = await vscode.workspace.openTextDocument(uri);
 
                         // Replace content
@@ -259,10 +259,10 @@ export class AdbCommandManager {
 
                         await vscode.window.showTextDocument(doc);
                     } else {
-                        vscode.window.showErrorMessage('Dumpsys returned no output.');
+                        vscode.window.showErrorMessage(Constants.Messages.Error.DumpsysNoOutput);
                     }
                 } catch (e: any) {
-                    vscode.window.showErrorMessage(`Dumpsys failed: ${e.message}`);
+                    vscode.window.showErrorMessage(Constants.Messages.Error.DumpsysFailed.replace('{0}', e.message));
                 }
             }
         }));
@@ -274,7 +274,7 @@ export class AdbCommandManager {
                     if (result) {
                         // Create a URI with a unique title: "Dumpsys mem: <package> (<HMS>)"
                         const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
-                        const uri = vscode.Uri.from({ scheme: 'untitled', path: `Dumpsys mem: ${item.device.targetApp} (${timestamp})` });
+                        const uri = vscode.Uri.from({ scheme: Constants.Schemes.Untitled, path: `Dumpsys mem: ${item.device.targetApp} (${timestamp})` });
                         const doc = await vscode.workspace.openTextDocument(uri);
 
                         // Replace content
@@ -288,10 +288,10 @@ export class AdbCommandManager {
 
                         await vscode.window.showTextDocument(doc);
                     } else {
-                        vscode.window.showErrorMessage('Dumpsys meminfo returned no output.');
+                        vscode.window.showErrorMessage(Constants.Messages.Error.DumpsysNoOutput);
                     }
                 } catch (e: any) {
-                    vscode.window.showErrorMessage(`Dumpsys meminfo failed: ${e.message}`);
+                    vscode.window.showErrorMessage(Constants.Messages.Error.DumpsysFailed.replace('{0}', e.message));
                 }
             }
         }));
@@ -303,7 +303,7 @@ export class AdbCommandManager {
                     if (result) {
                         // Create a URI with a unique title: "Dumpsys act: <package> (<HMS>)"
                         const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
-                        const uri = vscode.Uri.from({ scheme: 'untitled', path: `Dumpsys act: ${item.device.targetApp} (${timestamp})` });
+                        const uri = vscode.Uri.from({ scheme: Constants.Schemes.Untitled, path: `Dumpsys act: ${item.device.targetApp} (${timestamp})` });
                         const doc = await vscode.workspace.openTextDocument(uri);
 
                         // Replace content
@@ -317,10 +317,10 @@ export class AdbCommandManager {
 
                         await vscode.window.showTextDocument(doc);
                     } else {
-                        vscode.window.showErrorMessage('Dumpsys activity returned no output.');
+                        vscode.window.showErrorMessage(Constants.Messages.Error.DumpsysNoOutput);
                     }
                 } catch (e: any) {
-                    vscode.window.showErrorMessage(`Dumpsys activity failed: ${e.message}`);
+                    vscode.window.showErrorMessage(Constants.Messages.Error.DumpsysFailed.replace('{0}', e.message));
                 }
             }
         }));
@@ -341,7 +341,7 @@ export class AdbCommandManager {
                     const uri = vscode.Uri.file(localPath);
                     await vscode.commands.executeCommand('vscode.open', uri);
                 } else {
-                    vscode.window.showErrorMessage('Screenshot capture failed.');
+                    vscode.window.showErrorMessage(Constants.Messages.Error.ScreenshotFailed);
                 }
             }
         }));
@@ -350,7 +350,7 @@ export class AdbCommandManager {
             if (item && item.device) {
                 const success = await this.adbService.startRecording(item.device.id);
                 if (success) {
-                    vscode.window.showInformationMessage('Recording started... (Max 3 mins)');
+                    vscode.window.showInformationMessage(Constants.Messages.Info.RecordingStarted);
                 }
             }
         }));

@@ -6,6 +6,11 @@
 export const Constants = {
     ExtensionId: 'logmagnifier',
 
+    Schemes: {
+        File: 'file',
+        Untitled: 'untitled',
+    },
+
     Commands: {
         AddFilterGroup: 'logmagnifier.addFilterGroup',
         AddRegexFilterGroup: 'logmagnifier.addRegexFilterGroup',
@@ -165,6 +170,12 @@ export const Constants = {
         CollapseAllRegexGroups: 'logmagnifier.collapseAllRegexGroups',
         EnableAllItemsInGroup: 'logmagnifier.enableAllItemsInGroup',
         DisableAllItemsInGroup: 'logmagnifier.disableAllItemsInGroup',
+        ApplyJsonPretty: 'logmagnifier.applyJsonPretty',
+
+        // Bookmark internal
+        RemoveBookmarkFile: 'logmagnifier.removeBookmarkFile',
+        CopyBookmarkFile: 'logmagnifier.copyBookmarkFile',
+        OpenBookmarkFile: 'logmagnifier.openBookmarkFile',
 
         // ... (existing commands)
     },
@@ -204,6 +215,11 @@ export const Constants = {
             StickyScrollEnabled: 'stickyScroll.enabled',
             NavigationAnimation: 'editor.navigationAnimation',
             RemoveMatchesMaxLines: 'removeMatches.maxLines',
+            LargeFileOptimizations: 'largeFileOptimizations',
+        },
+        Adb: {
+            Path: 'adbPath',
+            DefaultOptions: 'adbLogcatDefaultOptions',
         },
     },
 
@@ -297,6 +313,95 @@ export const Constants = {
     },
 
     ExtensionDisplayName: 'LogMagnifier',
+
+    Messages: {
+        Info: {
+            NoTextToProcess: 'LogMagnifier: No text to process.',
+            NoJsonFound: 'LogMagnifier: No JSON-like content found in the selection.',
+            SelectTextToSearch: 'Please select a text to search for matches.',
+            AddedBookmarks: 'Added {0} bookmarks.',
+            AddedBookmarksLimited: 'Added {0} bookmarks (Limited to first {1} matches).',
+            NoMatchesFound: 'No matches found in the active editor.',
+            BookmarksCopied: 'Bookmarks copied to clipboard.',
+            UninstallCompleted: 'Uninstall completed. Please refresh the device list.',
+            ClearStorageCompleted: 'Clear storage completed. Please refresh if needed.',
+            ClearCacheCompleted: 'Clear cache completed. Please refresh if needed.',
+            RecordingStarted: 'Recording started... (Max 3 mins)',
+            SelectTextFirst: 'Please select some text first.',
+            NoMatchesForText: 'No matches found for \'{0}\'.',
+            RemovedLines: 'Removed {0} lines matching \'{1}\'.',
+            CopiedItems: 'Copied {0} items to clipboard.',
+            CopiedItemsSingleLine: 'Copied {0} items to clipboard (single line).',
+            CopiedItemsTags: 'Copied {0} items as tags to clipboard.',
+            NoEnabledItems: 'No enabled items to copy (excluded filters ignored).',
+            ProfileDeleted: 'Profile \'{0}\' deleted.',
+            ProfileCreated: 'Profile \'{0}\' created and activated.',
+            ProfileDuplicated: 'Profile duplicated as \'{0}\'.',
+            ProfileSwitched: 'Switched to profile \'{0}\'.',
+            SelectFilterFirst: 'Please select a filter in the Word Filters view first.',
+            FilterDisabled: 'Filter \'{0}\' is disabled.',
+            NoMatchesForFilter: 'No matches found for: {0}',
+            ExportSuccess: '{0} filters exported successfully to {1}',
+            ExportGroupSuccess: 'Group \'{0}\' exported successfully to {1}',
+            ImportSuccess: 'Successfully imported {0} {1} filter groups.',
+            NoSourceMapping: 'No source mapping found for this line.',
+        },
+        Warn: {
+            UninstallConfirm: 'Are you sure you want to uninstall {0}?',
+            ClearStorageConfirm: 'Are you sure you want to clear storage for {0}?',
+            RemoveMatchesConfirm: 'Are you sure you want to remove {0} lines matching \'{1}\'?',
+            NoLinesToRemove: 'No lines found matching selection to remove.',
+            ConfirmDeleteProfile: 'Are you sure you want to delete profile \'{0}\'?',
+            NoActiveGroups: 'No active {0} groups selected.',
+            EmptyImport: '{0} Check your filter keywords (case-sensitive).',
+            NoMatchingFilters: 'No matching filters found in the selected file.',
+            FilterAlreadyExistsInGroup: 'Filter \'{0}\' already exists in group \'{1}\'.',
+            AppNotRunning: 'App {0} is not running. Starting logcat without PID filter.',
+        },
+        Error: {
+            InvalidTagFormat: 'Invalid Tag format. Use "Tag" or "Tag:Priority" (V, D, I, W, E, F, S)',
+            UninstallFailed: 'Uninstall failed.',
+            ClearStorageFailed: 'Clear storage failed.',
+            ClearCacheFailed: 'Clear cache failed (App might need to be debuggable).',
+            DumpsysNoOutput: 'Dumpsys returned no output.',
+            DumpsysFailed: 'Dumpsys failed: {0}',
+            ScreenshotFailed: 'Screenshot capture failed.',
+            JsonProcessError: 'LogMagnifier: Error processing JSON.',
+            NoActiveEditor: 'No active text editor found.',
+            OpenBookmarkFailed: 'Failed to open bookmark: {0}',
+            OpenBookmarkTabFailed: 'Failed to open bookmark tab: {0}',
+            WordFilterGroupExists: 'Word Filter Group \'{0}\' already exists.',
+            RegexFilterGroupExists: 'Regex Filter Group \'{0}\' already exists.',
+            FilterExistsInGroup: 'Filter \'{0}\' ({1}) already exists in this group.',
+            RegexFilterExists: 'Regex Filter with pattern \'{0}\' or nickname \'{1}\' already exists in this group.',
+            ProfileCreateFailed: 'Failed to create profile \'{0}\'.',
+            NoFilterGroups: 'No {0} filter groups exist. Create a group first.',
+            NoActiveFile: 'No active file found. Please ensure a log file is open and visible.',
+            ApplyFiltersError: 'Error applying filters: {0}',
+            ExportFailed: 'Failed to export filters: {0}',
+            ExportGroupFailed: 'Failed to export group: {0}',
+            ImportFailed: 'Failed to import filters: {0}',
+            ReadFilterFileFailed: 'Failed to read filter file: {0}',
+            JumpToSourceFailed: 'Failed to jump to source: {0}',
+
+            ImportInvalidFormat: 'Invalid filter data format: expected an object with a "groups" array.',
+            InvalidFilterPattern: 'Invalid filter pattern: "{0}"',
+            LogcatStartFailed: 'Failed to start logcat process: {0}',
+            RecordingFailed: 'Screen recording failed: {0}',
+            RecordingEmpty: 'Screen recording file is empty.',
+            RetrieveRecordingFailed: 'Failed to retrieve screen recording.',
+        },
+        Progress: {
+            Processing: 'Processing...',
+            Downloading: 'Downloading...',
+        }
+    },
+
+    Defaults: {
+        TempFilePrefix: 'filtered_',
+        AdbPath: 'adb',
+        AdbDefaultOptions: '-v threadtime',
+    },
 
     // Add other constants as needed
 } as const;
