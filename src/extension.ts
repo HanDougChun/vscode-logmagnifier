@@ -122,7 +122,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}));
 
 	// Update highlights and counts when active editor changes
-	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
+	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(async editor => {
 		sourceMapService.updateContextKey(editor);
 
 		// Check for pending navigation (animation) on active editor change
@@ -149,8 +149,10 @@ export function activate(context: vscode.ExtensionContext) {
 			const largeFileOptimizations = vscode.workspace.getConfiguration('editor').get<boolean>('largeFileOptimizations');
 			logger.info(`Active editor changed to: ${fileName} (Scheme: ${scheme}, LargeFileOptimizations: ${largeFileOptimizations})`);
 
-			const counts = highlightService.updateHighlights(editor);
-			resultCountService.updateCounts(counts);
+			const counts = await highlightService.updateHighlights(editor);
+			if (counts) {
+				resultCountService.updateCounts(counts);
+			}
 			lastProcessedDoc = editor.document;
 		} else {
 			lastProcessedDoc = undefined; // Invalidate since we are not tracking a standard editor
@@ -184,28 +186,28 @@ export function activate(context: vscode.ExtensionContext) {
 	}));
 
 	// Update highlights when filters change
-	context.subscriptions.push(filterManager.onDidChangeFilters(() => {
+	context.subscriptions.push(filterManager.onDidChangeFilters(async () => {
 		lastProcessedDoc = undefined; // Force update
 		if (vscode.window.activeTextEditor) {
 			const scheme = vscode.window.activeTextEditor.document.uri.scheme;
 			if (isSupportedScheme(vscode.window.activeTextEditor.document.uri)) {
-				const counts = highlightService.updateHighlights(vscode.window.activeTextEditor);
-				resultCountService.updateCounts(counts);
+				const counts = await highlightService.updateHighlights(vscode.window.activeTextEditor);
+				if (counts) resultCountService.updateCounts(counts);
 				lastProcessedDoc = vscode.window.activeTextEditor.document;
 			}
 		}
 	}));
 
 	// Update highlights when configuration changes (e.g. color)
-	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async e => {
 		if (e.affectsConfiguration('logmagnifier.regex.highlightColor') || e.affectsConfiguration('logmagnifier.regex.enableHighlight')) {
 			highlightService.refreshDecorationType();
 			lastProcessedDoc = undefined; // Force update
 			if (vscode.window.activeTextEditor) {
 				const scheme = vscode.window.activeTextEditor.document.uri.scheme;
 				if (isSupportedScheme(vscode.window.activeTextEditor.document.uri)) {
-					const counts = highlightService.updateHighlights(vscode.window.activeTextEditor);
-					resultCountService.updateCounts(counts);
+					const counts = await highlightService.updateHighlights(vscode.window.activeTextEditor);
+					if (counts) resultCountService.updateCounts(counts);
 					lastProcessedDoc = vscode.window.activeTextEditor.document;
 				}
 			}
@@ -226,8 +228,11 @@ export function activate(context: vscode.ExtensionContext) {
 		const fileName = editor.document.fileName;
 		logger.info(`Initial active editor: ${fileName} (Scheme: ${scheme})`);
 
-		const counts = highlightService.updateHighlights(editor);
-		resultCountService.updateCounts(counts);
+		// Initial highlight (async)
+		(async () => {
+			const counts = await highlightService.updateHighlights(editor);
+			if (counts) resultCountService.updateCounts(counts);
+		})();
 		lastProcessedDoc = editor.document;
 	}
 
@@ -247,10 +252,10 @@ export function activate(context: vscode.ExtensionContext) {
 				clearTimeout(debounceTimer);
 			}
 
-			debounceTimer = setTimeout(() => {
+			debounceTimer = setTimeout(async () => {
 				if (vscode.window.activeTextEditor && e.document === vscode.window.activeTextEditor.document) {
-					const counts = highlightService.updateHighlights(vscode.window.activeTextEditor);
-					resultCountService.updateCounts(counts);
+					const counts = await highlightService.updateHighlights(vscode.window.activeTextEditor);
+					if (counts) resultCountService.updateCounts(counts);
 					lastProcessedDoc = vscode.window.activeTextEditor.document;
 				}
 			}, 500);

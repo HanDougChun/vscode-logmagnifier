@@ -16,8 +16,8 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
         this.filterManager.onDidChangeResultCounts(() => this.refresh());
     }
 
-    refresh(): void {
-        this._onDidChangeTreeData.fire();
+    refresh(element?: TreeItem): void {
+        this._onDidChangeTreeData.fire(element);
     }
 
     getTreeItem(element: TreeItem): vscode.TreeItem {

@@ -107,13 +107,13 @@ export class HighlightService implements vscode.Disposable {
         }
 
         const activeGroups = this.filterManager.getGroups().filter(g => g.isEnabled);
-        const activeFilters: FilterItem[] = [];
+        const activeFilters: { filter: FilterItem, groupId: string }[] = [];
         const enableRegexHighlight = vscode.workspace.getConfiguration(Constants.Configuration.Section).get<boolean>(Constants.Configuration.Regex.EnableHighlight) || false;
 
         activeGroups.forEach(g => {
             g.filters.forEach(f => {
                 if (f.isEnabled && (f.isRegex ? enableRegexHighlight : true)) {
-                    activeFilters.push(f);
+                    activeFilters.push({ filter: f, groupId: g.id });
                 }
             });
         });
@@ -133,7 +133,7 @@ export class HighlightService implements vscode.Disposable {
 
         const defaultColor = vscode.workspace.getConfiguration(Constants.Configuration.Section).get<string | { light: string, dark: string }>(Constants.Configuration.Regex.HighlightColor) || Constants.Configuration.Regex.DefaultHighlightColor;
 
-        activeFilters.forEach(filter => {
+        activeFilters.forEach(({ filter, groupId }) => {
             if (!filter.keyword) { return; }
 
             const isExclude = filter.type === 'exclude';
@@ -222,6 +222,21 @@ export class HighlightService implements vscode.Disposable {
                 matchCounts.set(filter.id, count);
             } catch (e) {
                 this.logger.warn(`Failed to apply filter '${filter.keyword}': ${e}`);
+
+                // User Feedback for invalid regex
+                if (filter.isRegex) {
+                    vscode.window.showErrorMessage(
+                        `Invalid filter pattern: "${filter.keyword}"`,
+                        'Edit Filter',
+                        'Disable Filter'
+                    ).then(selection => {
+                        if (selection === 'Edit Filter') {
+                            vscode.commands.executeCommand('logmagnifier.editFilter', filter);
+                        } else if (selection === 'Disable Filter') {
+                            this.filterManager.toggleFilter(groupId, filter.id);
+                        }
+                    });
+                }
             }
         });
 

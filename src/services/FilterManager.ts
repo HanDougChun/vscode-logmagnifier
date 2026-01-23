@@ -2,20 +2,12 @@ import * as vscode from 'vscode';
 import { Constants } from '../constants';
 import { FilterGroup, FilterItem, FilterType } from '../models/Filter';
 import { Logger } from './Logger';
+import { ColorService, ColorPreset } from './ColorService';
+import { ProfileManager, FilterProfile } from './ProfileManager';
+import { FilterStateService } from './FilterStateService';
 import * as crypto from 'crypto';
 
-// Solarized-inspired and distinct colors for highlights
-export interface ColorPreset {
-    id: string; // color1 ~ color16
-    dark: string;
-    light: string;
-}
 
-export interface FilterProfile {
-    name: string;
-    groups: FilterGroup[];
-    updatedAt: number;
-}
 
 export class FilterManager {
     private groups: FilterGroup[] = [];
@@ -23,36 +15,37 @@ export class FilterManager {
     private _onDidChangeFilters: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
     readonly onDidChangeFilters: vscode.Event<void> = this._onDidChangeFilters.event;
 
-    private _onDidChangeResultCounts: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
-    readonly onDidChangeResultCounts: vscode.Event<void> = this._onDidChangeResultCounts.event;
+    private _onDidChangeResultCounts: vscode.EventEmitter<FilterItem | FilterGroup | undefined | void> = new vscode.EventEmitter<FilterItem | FilterGroup | undefined | void>();
+    readonly onDidChangeResultCounts: vscode.Event<FilterItem | FilterGroup | undefined | void> = this._onDidChangeResultCounts.event;
 
     private _onDidChangeProfile: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
     readonly onDidChangeProfile: vscode.Event<void> = this._onDidChangeProfile.event;
 
     private logger: Logger;
+    private colorService: ColorService;
+    private profileManager: ProfileManager;
+    private stateService: FilterStateService;
 
     constructor(private context: vscode.ExtensionContext) {
         this.logger = Logger.getInstance();
-        this.loadColorPresets();
-        this.loadFromState();
+        this.colorService = new ColorService();
+        this.profileManager = new ProfileManager(context);
+        this.stateService = new FilterStateService(context);
+
+        this.groups = this.stateService.loadFromState();
+        this.resetCounts();
         this.initDefaultFilters();
+
+        // Relay profile changes
+        this.profileManager.onDidChangeProfile(() => this._onDidChangeProfile.fire());
 
         // Listen for configuration changes
         vscode.workspace.onDidChangeConfiguration(e => {
             if (e.affectsConfiguration(Constants.Configuration.HighlightColors.Section)) {
-                this.loadColorPresets();
+                this.colorService.loadColorPresets();
                 this._onDidChangeFilters.fire();
             }
         });
-    }
-
-    private loadFromState() {
-        const savedGroups = this.context.globalState.get<FilterGroup[]>(Constants.GlobalState.FilterGroups);
-        if (savedGroups && Array.isArray(savedGroups)) {
-            this.groups = savedGroups;
-            this.resetCounts(); // Reset counts on startup
-            this.logger.info(`Loaded ${this.groups.length} filter groups from state.`);
-        }
     }
 
     private resetCounts() {
@@ -66,17 +59,12 @@ export class FilterManager {
 
     private saveDebounceTimer: NodeJS.Timeout | undefined;
 
-    private deepCopy<T>(obj: T): T {
-        try {
-            return structuredClone(obj);
-        } catch (e) {
-            return JSON.parse(JSON.stringify(obj));
-        }
-    }
-
     private ensureFilterMigration(filter: FilterItem): void {
         if (filter.highlightMode === undefined) {
-            const legacy = filter as any;
+            interface LegacyFilterItem {
+                enableFullLineHighlight?: boolean;
+            }
+            const legacy = filter as unknown as LegacyFilterItem;
             filter.highlightMode = legacy.enableFullLineHighlight ? 1 : 0;
             delete legacy.enableFullLineHighlight;
         }
@@ -88,7 +76,19 @@ export class FilterManager {
         }
         this.saveDebounceTimer = setTimeout(async () => {
             try {
-                await this.saveToState();
+                this.stateService.saveToState(this.groups);
+                // Also update active profile if needed, but ProfileManager handles separate persistence based on explicit actions usually.
+                // However, original code synced persistence to active profile on every internal change?
+                // Yes, "2. Auto-save to Active Profile" was in saveToState.
+                // We should replicate that behavior if we want auto-save.
+                // ProfileManager.updateProfileData does that.
+
+                const activeWrapper = this.profileManager.getActiveProfile();
+                // We need to call profileManager.updateProfileData(activeWrapper, this.groups)
+                // But wait, updateProfileData needs to be exposed or we use a public method?
+                // created ProfileManager.updateProfileData as public.
+                await this.profileManager.updateProfileData(activeWrapper, this.groups);
+
             } catch (e) {
                 this.logger.error(`Failed to save state: ${e}`);
             } finally {
@@ -97,83 +97,7 @@ export class FilterManager {
         }, 300);
     }
 
-    private async saveToState() {
-        // Create a snapshot of groups to avoid race conditions during async operations
-        const groupsSnapshot = this.deepCopy(this.groups);
 
-        // 1. Save to current session state (FilterGroups) - this ensures reload restoration
-        await this.context.globalState.update(Constants.GlobalState.FilterGroups, groupsSnapshot);
-
-        // 2. Auto-save to Active Profile (including Default)
-        const activeProfileName = this.getActiveProfile();
-        await this.updateProfileData(activeProfileName, groupsSnapshot);
-    }
-
-    private async updateProfileData(name: string, groups: FilterGroup[]) {
-        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
-        const index = profiles.findIndex(p => p.name === name);
-        if (index !== -1) {
-            profiles[index].groups = this.deepCopy(groups);
-            profiles[index].updatedAt = Date.now();
-        } else {
-            // New profile or Default profile being saved for the first time
-            profiles.push({
-                name,
-                groups: this.deepCopy(groups),
-                updatedAt: Date.now()
-            });
-        }
-        await this.context.globalState.update(Constants.GlobalState.FilterProfiles, profiles);
-    }
-
-    private loadColorPresets() {
-        const config = vscode.workspace.getConfiguration(Constants.Configuration.HighlightColors.Section);
-        const presets: ColorPreset[] = [];
-
-        this.logger.info('Loading color presets...');
-
-        // Load all defined color presets from configuration (package.json provides defaults)
-        for (let i = 1; i <= 16; i++) {
-            const id = `color${i.toString().padStart(2, '0')}`;
-            const colorConfig = config.get<{ dark: string, light: string }>(id);
-            const inspection = config.inspect<{ dark: string, light: string }>(id);
-
-            const userValue = inspection?.workspaceFolderValue || inspection?.workspaceValue || inspection?.globalValue;
-            const isUserDefined = userValue !== undefined;
-            const isCompleteUserValue = isUserDefined && userValue?.dark && userValue?.light;
-
-            if (colorConfig && colorConfig.dark && colorConfig.light) {
-                let source = 'Default';
-                if (isCompleteUserValue) {
-                    source = 'User setting';
-                } else if (isUserDefined) {
-                    source = 'Partial (Default fallback)';
-                    this.logger.error(`Invalid/Partial user setting for color preset: ${id}. It should have both "dark" and "light" properties. Falling back to defaults for missing keys.`);
-                }
-
-                this.logger.info(`Loaded color preset: ${id} (${source}) - dark: ${colorConfig.dark}, light: ${colorConfig.light}`);
-
-                presets.push({
-                    id,
-                    dark: colorConfig.dark,
-                    light: colorConfig.light
-                });
-            } else {
-                // This case handles where even the merged value is invalid (shouldn't happen with defaults)
-                if (isUserDefined) {
-                    this.logger.error(`Invalid user setting for color preset: ${id}. It must be an object with both "dark" and "light" color strings.`);
-                } else {
-                    this.logger.warn(`Missing or invalid default configuration for color preset: ${id}`);
-                }
-            }
-        }
-
-        if (presets.length > 0) {
-            this.colorPresets = presets;
-        } else {
-            this.logger.error('No color presets found in configuration.');
-        }
-    }
 
     private initDefaultFilters(): void {
         const hasRegexGroups = this.groups.some(g => g.isRegex);
@@ -207,15 +131,15 @@ export class FilterManager {
     }
 
     public getAvailableColors(): string[] {
-        return this.colorPresets.map(p => p.id);
+        return this.colorService.getAvailableColors();
     }
 
     public getColorPresets(): ColorPreset[] {
-        return this.colorPresets;
+        return this.colorService.getColorPresets();
     }
 
     public getPresetById(id: string): ColorPreset | undefined {
-        return this.colorPresets.find(p => p.id === id);
+        return this.colorService.getPresetById(id);
     }
 
     public addGroup(name: string, isRegex: boolean = false): FilterGroup | undefined {
@@ -284,20 +208,7 @@ export class FilterManager {
     }
 
     private assignColor(group: FilterGroup): string {
-        const usedColors = new Set(
-            group.filters
-                .filter(f => f.color)
-                .map(f => f.color)
-        );
-
-        // Find first unused color
-        const availableColor = this.colorPresets.find(c => !usedColors.has(c.id));
-        if (availableColor) {
-            return availableColor.id;
-        }
-
-        // If all used, pick random from presets
-        return this.colorPresets[Math.floor(Math.random() * this.colorPresets.length)].id;
+        return this.colorService.assignColor(group);
     }
 
     public updateFilterColor(groupId: string, filterId: string, color: string): void {
@@ -345,7 +256,7 @@ export class FilterManager {
         if (group) {
             const filter = group.filters.find(f => f.id === filterId);
             if (filter) {
-                this.ensureFilterMigration(filter);
+
 
                 // Cycle: 0 (Word) -> 1 (Line) -> 2 (Whole Line) -> 0
                 filter.highlightMode = ((filter.highlightMode ?? 0) + 1) % 3;
@@ -537,7 +448,7 @@ export class FilterManager {
         if (group) {
             const filter = group.filters.find(f => f.id === filterId);
             if (filter) {
-                this.ensureFilterMigration(filter);
+
 
                 if (filter.highlightMode !== mode) {
                     filter.highlightMode = mode;
@@ -800,179 +711,117 @@ export class FilterManager {
                 const fCount = counts.find(c => c.filterId === filter.id);
                 if (fCount !== undefined && filter.resultCount !== fCount.count) {
                     filter.resultCount = fCount.count;
+                    this._onDidChangeResultCounts.fire(filter); // Fire for specific item
                     changed = true;
                 }
             }
         }
 
         if (changed) {
-            this._onDidChangeResultCounts.fire();
+            // Optional: fire a general event if many things changed, 
+            // but for partial refresh we want specific events which we fired above.
+            // If the tree view needs a general "something changed, check everything" signal, 
+            // we could fire a void event here, but we are firing specific ones.
+            // this._onDidChangeResultCounts.fire(); 
         }
     }
 
     // Profile Management
 
     public getActiveProfile(): string {
-        return this.context.globalState.get<string>(Constants.GlobalState.ActiveProfile) || Constants.Labels.DefaultProfile;
+        return this.profileManager.getActiveProfile();
     }
 
     public getProfileNames(): string[] {
-        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
-        const names = profiles.map(p => p.name);
-        if (!names.includes(Constants.Labels.DefaultProfile)) {
-            names.unshift(Constants.Labels.DefaultProfile);
-        }
-        return names.sort((a, b) => {
-            if (a === Constants.Labels.DefaultProfile) { return -1; }
-            if (b === Constants.Labels.DefaultProfile) { return 1; }
-            return a.localeCompare(b);
-        });
+        return this.profileManager.getProfileNames();
     }
 
     public getProfilesMetadata(): { name: string, wordCount: number, regexCount: number }[] {
-        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
-
-        // Check if Default is present
-        const hasDefault = profiles.some(p => p.name === Constants.Labels.DefaultProfile);
-        let metadata = profiles.map(p => ({
-            name: p.name,
-            wordCount: p.groups.filter(g => !g.isRegex).length,
-            regexCount: p.groups.filter(g => g.isRegex).length
-        }));
-
-        if (!hasDefault) {
-            metadata.unshift({ name: Constants.Labels.DefaultProfile, wordCount: 1, regexCount: 0 });
-        }
-
-        return metadata.sort((a, b) => {
-            if (a.name === Constants.Labels.DefaultProfile) { return -1; }
-            if (b.name === Constants.Labels.DefaultProfile) { return 1; }
-            return a.name.localeCompare(b.name);
-        });
+        return this.profileManager.getProfilesMetadata();
     }
 
     public async deleteProfile(name: string): Promise<boolean> {
-        if (name === Constants.Labels.DefaultProfile) {
-            this.logger.warn("Cannot delete Default profile.");
-            return false;
-        }
+        const success = await this.profileManager.deleteProfile(name);
+        if (success) {
+            // Check if we need to switch to default active profile if the deleted one was active
+            // ProfileManager.deleteProfile updates state, but we need to update our in-memory groups
+            if (this.profileManager.getActiveProfile() === Constants.Labels.DefaultProfile) {
+                // If we were on the deleted profile, we should have switched?
+                // ProfileManager.deleteProfile:
+                // if (this.getActiveProfile() === name) { switch to default ... }
+                // So now getActiveProfile() should be Default.
+                // We just need to load Default profile into memory.
 
-        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
-        const index = profiles.findIndex(p => p.name === name);
-        if (index !== -1) {
-            profiles.splice(index, 1);
-            await this.context.globalState.update(Constants.GlobalState.FilterProfiles, profiles);
+                // But wait, if we are here, we might have been on the deleted profile.
+                // We should check if our 'this.groups' effectively needs reload.
+                // Simpler: Just reload "Default" profile if current profile name matches deleted one?
+                // But ProfileManager already switched state.
 
-            // If active was deleted, switch to Default
-            if (this.getActiveProfile() === name) {
+                // Let's just blindly reload FilterGroups from state?
+                // Or reload Default explicitly.
                 await this.loadProfile(Constants.Labels.DefaultProfile);
             }
-
-            this.logger.info(`Profile deleted: ${name}`);
-            return true;
         }
-        return false;
+        return success;
     }
 
     public async saveProfile(name: string): Promise<void> {
-        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
-        const existingIndex = profiles.findIndex(p => p.name === name);
-
-        // Create deep copy of current groups
-        const groupsCopy = JSON.parse(JSON.stringify(this.groups));
-
-        const newProfile: FilterProfile = {
-            name,
-            groups: groupsCopy,
-            updatedAt: Date.now()
-        };
-
-        if (existingIndex !== -1) {
-            profiles[existingIndex] = newProfile;
-        } else {
-            profiles.push(newProfile);
-        }
-
-        await this.context.globalState.update(Constants.GlobalState.FilterProfiles, profiles);
-        await this.context.globalState.update(Constants.GlobalState.ActiveProfile, name);
-        this._onDidChangeProfile.fire();
-        this.logger.info(`Profile saved: ${name}`);
+        // 'saveProfile' logic seems to be "Save current groups to profile 'name'"
+        await this.profileManager.updateProfileData(name, this.groups);
     }
 
     public async createProfile(name: string): Promise<boolean> {
-        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
-        if (profiles.some(p => p.name === name)) {
+        // Create new profile with default filters (fresh start)
+        const tempGroups: FilterGroup[] = [];
+        // We temporarily use this.groups to generate defaults or we can refactor initDefaultFilters.
+        // For now, let's manually create the default group structure or just use empty if initDefaultFilters depends on this.groups state.
+        // initDefaultFilters checks if regex groups exist.
+        // Let's rely on ProfileManager to just store what we give it.
+
+        // We'll create a fresh set of defaults to save.
+        // Actually, simpler:
+        // 1. Create defaults in a temporary local array?
+        // initDefaultFilters pushes to this.groups.
+        // Let's clone current, clear this.groups, init defaults, save to profile, then load it?
+        // That effectively switches to it.
+
+        const previousGroups = this.stateService.deepCopy(this.groups);
+        this.groups = [];
+        this.initDefaultFilters();
+
+        const success = await this.profileManager.createProfile(name, this.stateService.deepCopy(this.groups));
+        if (success) {
+            this.stateService.saveToState(this.groups);
+            // ProfileManager createProfile DOES NOT switch active profile automatically in the service?
+            // Checking service: createProfile just pushes to array.
+            // So we need to switch.
+            await this.profileManager.loadProfile(name); // This sets active profile state
+            this._onDidChangeFilters.fire();
+            this.logger.info(`Created and switched to new profile: ${name}`);
+            return true;
+        } else {
+            // Restore
+            this.groups = previousGroups;
             return false;
         }
-
-        // Initialize with default filters for new profile
-        // Temporary reset groups to defaults to get the structure, then save
-        const tempGroups: FilterGroup[] = [];
-        // We can reuse initDefaultFilters logic but it works on 'this.groups'.
-        // Let's just create a blank state or use initDefaultFilters logic on a temp array.
-        // Actually, easiest way is:
-        // 1. Save current groups to current profile? (Already handled by auto-save if we were in one)
-        // 2. Reset this.groups = []
-        // 3. Run initDefaultFilters()
-        // 4. Save as new profile
-
-        this.groups = [];
-        this.initDefaultFilters(); // Adds presets
-
-        // Save this new state as the new profile
-        const newProfile: FilterProfile = {
-            name,
-            groups: JSON.parse(JSON.stringify(this.groups)),
-            updatedAt: Date.now()
-        };
-
-        profiles.push(newProfile);
-        await this.context.globalState.update(Constants.GlobalState.FilterProfiles, profiles);
-        await this.context.globalState.update(Constants.GlobalState.ActiveProfile, name);
-
-        this.saveToState(); // Saves to GlobalState.FilterGroups
-        this._onDidChangeFilters.fire();
-        this._onDidChangeProfile.fire();
-        this.logger.info(`Created new profile: ${name}`);
-
-        return true;
     }
 
     public async loadProfile(name: string): Promise<boolean> {
-        // Special handling for Default if it's not saved explicitly
-        if (name === Constants.Labels.DefaultProfile) {
-            const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
-            const profile = profiles.find(p => p.name === name);
+        const groups = await this.profileManager.loadProfile(name);
 
-            if (profile) {
-                this.groups = JSON.parse(JSON.stringify(profile.groups));
-                this.resetCounts();
-            } else {
-                // Reset to factory defaults
-                this.groups = [];
-                this.initDefaultFilters();
-            }
-
-            await this.context.globalState.update(Constants.GlobalState.ActiveProfile, name);
-            this.saveToState();
+        if (groups) {
+            this.groups = this.stateService.deepCopy(groups);
+            this.resetCounts();
+            this.stateService.saveToState(this.groups);
             this._onDidChangeFilters.fire();
-            this._onDidChangeProfile.fire();
             this.logger.info(`Switched to profile: ${name}`);
             return true;
-        }
-
-        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
-        const profile = profiles.find(p => p.name === name);
-
-        if (profile) {
-            // Deep copy to separate from stored profile
-            this.groups = JSON.parse(JSON.stringify(profile.groups));
-            this.resetCounts();
-            this.saveToState(); // Update current session state
-            await this.context.globalState.update(Constants.GlobalState.ActiveProfile, name);
+        } else if (name === Constants.Labels.DefaultProfile) {
+            // Default profile explicit switch
+            this.groups = [];
+            this.initDefaultFilters();
+            this.stateService.saveToState(this.groups);
             this._onDidChangeFilters.fire();
-            this._onDidChangeProfile.fire();
-            this.logger.info(`Profile loaded: ${name}`);
             return true;
         }
         return false;
