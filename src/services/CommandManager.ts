@@ -304,16 +304,19 @@ export class CommandManager {
             }
 
             const doc = editor.document;
-            const edits = new vscode.WorkspaceEdit();
+            const fullText = doc.getText();
+            // Split by newline to process lines without object overhead
+            // Note: This naive split assumes standard line endings. doc.eol could be used but split regex is safer for mixed.
+            const lines = fullText.split(/\r?\n/);
+
             const rangesToDelete: vscode.Range[] = [];
             let matchCount = 0;
 
-            // Use String.includes for stateless, literal, case-sensitive matching
-            // This avoids issues with stateful RegEx (g flag) where lastIndex isn't reset between lines
-            for (let i = 0; i < doc.lineCount; i++) {
-                const line = doc.lineAt(i);
-                if (line.text.includes(selectedText)) {
-                    rangesToDelete.push(line.rangeIncludingLineBreak);
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].includes(selectedText)) {
+                    // Create range for the entire line including the line break
+                    // deleting from (i, 0) to (i+1, 0) effectively removes the line
+                    rangesToDelete.push(new vscode.Range(i, 0, i + 1, 0));
                     matchCount++;
                 }
             }
@@ -337,6 +340,7 @@ export class CommandManager {
                 }
             }
 
+            const edits = new vscode.WorkspaceEdit();
             for (const range of rangesToDelete) {
                 edits.delete(doc.uri, range);
             }
@@ -481,12 +485,6 @@ export class CommandManager {
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.SetExcludeStyle.LineThrough, setExcludeStyleHandler('line-through')));
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.SetExcludeStyle.Hidden, setExcludeStyleHandler('hidden')));
-
-        // Command: Toggle Filter Type (Legacy/Inline)
-        // The original toggleFilterTypeHandler is already defined above, so we don't redefine it.
-        // We just need to ensure the registrations are in the correct place if they were moved.
-        // Since the original registrations are immediately after its definition, and the new 'set' commands are inserted between,
-        // the original registrations will now appear after the 'set' commands. This matches the provided snippet's intent.
 
         // Command: Toggle Filter Highlight Mode
         const toggleHighlightModeHandler = (item: FilterItem) => {

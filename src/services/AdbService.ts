@@ -59,7 +59,11 @@ export class AdbService {
                         for (let i = 2; i < parts.length; i++) {
                             const [key, value] = parts[i].split(':');
                             if (key && value) {
-                                (device as any)[key] = value;
+                                if (key === 'transport_id') {
+                                    device.transportId = value;
+                                } else {
+                                    (device as any)[key] = value;
+                                }
                             }
                         }
                         this.logger.info(`[ADB] Parsed device: ${JSON.stringify(device)}`);
@@ -157,10 +161,19 @@ export class AdbService {
         const running = new Set<string>();
         const lines = output.split('\n');
         // valid package names usually look like com.example.app, but ps output has many columns.
-        // Last column is usually NAME.
+        // Standard Android ps: USER PID ... NAME (Last column, but might be space separated arguments if we aren't careful, though usually package name is single token)
+        // However, some ps outputs have 9 columns. Index 8 is NAME.
         for (const line of lines) {
             const parts = line.trim().split(/\s+/);
-            if (parts.length > 8) {
+            if (parts.length >= 9) {
+                // Join everything from index 8 onwards to handle potential spaces (rare for package names but good for safety)
+                const name = parts.slice(8).join(' '); // NAME is usually at index 8
+                if (name && name.includes('.') && !name.startsWith('[')) {
+                    running.add(name);
+                }
+            } else if (parts.length > 0) {
+                // Fallback for non-standard ps or older androids where column count might differ
+                // Just take the last part if it looks like a package
                 const name = parts[parts.length - 1];
                 if (name && name.includes('.') && !name.startsWith('[')) {
                     running.add(name);
@@ -210,9 +223,10 @@ export class AdbService {
             const parts = line.trim().split(/\s+/);
             if (parts.length < 9) { continue; }
             // 2nd column is typically PID in standard Android ps (USER PID ...)
-            // Last column is NAME
             const pid = parts[1];
-            const name = parts[parts.length - 1];
+            // Name starts at index 8
+            const name = parts.slice(8).join(' ');
+
             if (name === search || name.endsWith(`/${search}`)) {
                 return pid;
             }

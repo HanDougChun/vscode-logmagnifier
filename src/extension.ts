@@ -131,7 +131,7 @@ export function activate(context: vscode.ExtensionContext) {
 		quickAccessProvider.refresh();
 		if (editor) {
 			const scheme = editor.document.uri.scheme;
-			if (scheme !== 'file' && scheme !== 'untitled') {
+			if (!isSupportedScheme(editor.document.uri)) {
 				return;
 			}
 			const fileName = editor.document.fileName;
@@ -183,7 +183,7 @@ export function activate(context: vscode.ExtensionContext) {
 		lastProcessedDoc = undefined; // Force update
 		if (vscode.window.activeTextEditor) {
 			const scheme = vscode.window.activeTextEditor.document.uri.scheme;
-			if (scheme === 'file' || scheme === 'untitled') {
+			if (isSupportedScheme(vscode.window.activeTextEditor.document.uri)) {
 				const counts = highlightService.updateHighlights(vscode.window.activeTextEditor);
 				resultCountService.updateCounts(counts);
 				lastProcessedDoc = vscode.window.activeTextEditor.document;
@@ -198,7 +198,7 @@ export function activate(context: vscode.ExtensionContext) {
 			lastProcessedDoc = undefined; // Force update
 			if (vscode.window.activeTextEditor) {
 				const scheme = vscode.window.activeTextEditor.document.uri.scheme;
-				if (scheme === 'file' || scheme === 'untitled') {
+				if (isSupportedScheme(vscode.window.activeTextEditor.document.uri)) {
 					const counts = highlightService.updateHighlights(vscode.window.activeTextEditor);
 					resultCountService.updateCounts(counts);
 					lastProcessedDoc = vscode.window.activeTextEditor.document;
@@ -232,7 +232,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(e => {
 		if (vscode.window.activeTextEditor && e.document === vscode.window.activeTextEditor.document) {
 			const scheme = e.document.uri.scheme;
-			if (scheme !== 'file' && scheme !== 'untitled') {
+			if (!isSupportedScheme(e.document.uri)) {
 				return;
 			}
 
@@ -273,3 +273,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() { }
+
+function isSupportedScheme(uri: vscode.Uri): boolean {
+	return uri.scheme === 'file' || uri.scheme === 'untitled';
+}
