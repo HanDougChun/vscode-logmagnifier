@@ -102,6 +102,28 @@ export class LogBookmarkCommandManager {
         }
     }
 
+    private findMatchingLines(document: vscode.TextDocument, regex: RegExp, maxMatches: number, callback: (lineIndex: number, lineContent: string) => void): boolean {
+        const lineCount = document.lineCount;
+        let matchCount = 0;
+
+        for (let i = 0; i < lineCount; i++) {
+            const line = document.lineAt(i);
+            const lineContent = line.text;
+
+            // Reset lastIndex for global regexes to ensure correct matching per line
+            regex.lastIndex = 0;
+
+            if (regex.test(lineContent)) {
+                callback(i, lineContent);
+                matchCount++;
+                if (matchCount >= maxMatches) {
+                    return true; // Limit reached
+                }
+            }
+        }
+        return false; // Limit not reached
+    }
+
     private async toggleBookmark() {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -130,45 +152,39 @@ export class LogBookmarkCommandManager {
         const config = vscode.workspace.getConfiguration(Constants.Configuration.Section);
         const MAX_MATCHES = config.get<number>('bookmark.maxMatches', 500);
 
-        const text = editor.document.getText();
-        const lines = text.split(/\r?\n/);
         const matchedLines: number[] = [];
-
         const escapedText = selectedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(escapedText);
 
-        for (let i = 0; i < lines.length; i++) {
-            if (regex.test(lines[i])) {
-                matchedLines.push(i);
-                if (matchedLines.length >= MAX_MATCHES) {
-                    break;
-                }
-            }
-        }
+        this.findMatchingLines(editor.document, regex, MAX_MATCHES, (lineIndex) => {
+            matchedLines.push(lineIndex);
+        });
 
         if (matchedLines.length === 0) {
             vscode.window.showInformationMessage(Constants.Messages.Info.NoMatchesFound);
             return;
         }
 
-        // Check if ALL matched lines are already bookmarked
+        // Check if ALL matched lines are already bookmarked WITH THE SAME KEYWORD
+        // matches means: there is a bookmark on that line with matchText === selectedText
         const allBookmarked = matchedLines.every(line =>
-            this.bookmarkService.getBookmarkAt(editor.document.uri, line) !== undefined
+            this.bookmarkService.getBookmarkAt(editor.document.uri, line, selectedText) !== undefined
         );
 
         if (allBookmarked) {
             // Remove all matched bookmarks
             let removedCount = 0;
             for (const line of matchedLines) {
-                const b = this.bookmarkService.getBookmarkAt(editor.document.uri, line);
+                // Get the SPECIFIC bookmark for this keyword
+                const b = this.bookmarkService.getBookmarkAt(editor.document.uri, line, selectedText);
                 if (b) {
                     this.bookmarkService.removeBookmark(b);
                     removedCount++;
                 }
             }
-            vscode.window.showInformationMessage(`Removed ${removedCount} bookmarks matching selection.`);
+            vscode.window.showInformationMessage(`Removed ${removedCount} bookmarks matching selection '${selectedText}'.`);
         } else {
-            // Add bookmarks to all matched lines (that aren't already bookmarked)
+            // Add bookmarks to matched lines (excluding those that already have THIS keyword)
             const addedCount = this.bookmarkService.addBookmarks(editor, matchedLines, { matchText: selectedText });
             if (matchedLines.length >= MAX_MATCHES) {
                 vscode.window.showInformationMessage(Constants.Messages.Info.AddedBookmarksLimited.replace('{0}', addedCount.toString()).replace('{1}', MAX_MATCHES.toString()));
@@ -198,28 +214,15 @@ export class LogBookmarkCommandManager {
 
         // Limit the number of lines to add
         const config = vscode.workspace.getConfiguration(Constants.Configuration.Section);
-        // Default to 500 if not set, though package.json has default
         const MAX_MATCHES_TO_ADD = config.get<number>('bookmark.maxMatches', 500);
 
-        const text = editor.document.getText();
-        const lines = text.split(/\r?\n/);
         const matchedLines: number[] = [];
-
-        // Escape regex characters for exact match
         const escapedText = selectedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(escapedText);
 
-        // Iterate line by line to match
-        for (let i = 0; i < lines.length; i++) {
-            const lineContent = lines[i];
-
-            if (regex.test(lineContent)) {
-                matchedLines.push(i);
-                if (matchedLines.length >= MAX_MATCHES_TO_ADD) {
-                    break;
-                }
-            }
-        }
+        this.findMatchingLines(editor.document, regex, MAX_MATCHES_TO_ADD, (lineIndex) => {
+            matchedLines.push(lineIndex);
+        });
 
         if (matchedLines.length > 0) {
             const addedCount = this.bookmarkService.addBookmarks(editor, matchedLines, { matchText: selectedText });
@@ -251,23 +254,15 @@ export class LogBookmarkCommandManager {
 
         // Use RegexUtils to create regex for searching
         const regex = RegexUtils.create(keyword, !!filter.isRegex, !!filter.caseSensitive);
-        const text = editor.document.getText();
-        const lines = text.split(/\r?\n/);
+        const config = vscode.workspace.getConfiguration(Constants.Configuration.Section);
+        const MAX_MATCHES = config.get<number>('bookmark.maxMatches', 500);
 
         let count = 0;
 
-        // Iterate line by line to match
-        for (let i = 0; i < lines.length; i++) {
-            const lineContent = lines[i];
-
-            // Reset lastIndex as RegexUtils returns a shared RegExp instance with global flag
-            regex.lastIndex = 0;
-
-            if (regex.test(lineContent)) {
-                this.bookmarkService.addBookmark(editor, i, { matchText: keyword });
-                count++;
-            }
-        }
+        this.findMatchingLines(editor.document, regex, MAX_MATCHES, (lineIndex) => {
+            this.bookmarkService.addBookmark(editor, lineIndex, { matchText: keyword });
+            count++;
+        });
 
         if (count > 0) {
             vscode.window.showInformationMessage(Constants.Messages.Info.AddedBookmarks.replace('{0}', count.toString()));

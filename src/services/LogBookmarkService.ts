@@ -48,7 +48,7 @@ export class LogBookmarkService implements vscode.Disposable {
         }, null, context.subscriptions);
     }
 
-    public getBookmarkAt(uri: vscode.Uri, line: number): BookmarkItem | undefined {
+    public getBookmarkAt(uri: vscode.Uri, line: number, matchText?: string): BookmarkItem | undefined {
         const key = uri.toString();
         const bookmarks = this._bookmarks.get(key);
         if (!bookmarks) {
@@ -56,6 +56,9 @@ export class LogBookmarkService implements vscode.Disposable {
         }
 
         const activeIds = this.getActiveIds(key);
+        if (matchText) {
+            return bookmarks.find(b => b.line === line && activeIds.has(b.id) && b.matchText === matchText);
+        }
         return bookmarks.find(b => b.line === line && activeIds.has(b.id));
     }
 
@@ -104,8 +107,38 @@ export class LogBookmarkService implements vscode.Disposable {
 
             const list = this._bookmarks.get(key)!;
             const currentActiveIds = this.getActiveIds(key);
-            if (list.some(b => b.line === line && currentActiveIds.has(b.id))) {
-                return { success: false, message: 'Bookmark already exists on this line.' };
+
+            // Allow multiple bookmarks on same line IF matchText is different.
+            // Check if EXACT bookmark exists (same line AND same matchText)
+            const exists = list.some(b =>
+                b.line === line &&
+                currentActiveIds.has(b.id) &&
+                (matchText ? b.matchText === matchText : true) // If adding generic bookmark, check if any generic exists? Or just check if line is taken?
+                // Actually, if we add specific matchText, we check if THAT matchText exists.
+                // If we add generic (no matchText), we check if *any* exists? Or maybe generic duplicates are allowed? 
+                // Let's assume generic (manual toggle) checks for GENERIC (or any?).
+                // Usually usage is: Manual toggle (no matchText) -> blocks if ANY exists.
+                // Search add (matchText) -> blocks if SAME matchText exists.
+            );
+
+            // Simpler logic:
+            // If adding with matchText 'A', block if 'A' is already there on that line.
+            // If adding without matchText (manual), block if ANY manual bookmark exists? Or block if ANY exists?
+            // The user implies layering. 
+            // Let's refine:
+            // 1. If matchText provided: check duplicate by matchText.
+            // 2. If no matchText: check duplicate by "no matchText" (manual). OR simply check if line occupied?
+            // "Toggle" logic usually adds manual. If I have "Error" bookmark, and I manual toggle, maybe I want to add a manual note?
+            // For now, let's strict check based on equality.
+
+            const isDuplicate = list.some(b =>
+                b.line === line &&
+                currentActiveIds.has(b.id) &&
+                b.matchText === matchText
+            );
+
+            if (isDuplicate) {
+                return { success: false, message: 'Bookmark already exists for this keyword on this line.' };
             }
 
             const lineContent = doc.lineAt(line).text;
@@ -114,7 +147,7 @@ export class LogBookmarkService implements vscode.Disposable {
                 id: Date.now().toString() + Math.random().toString().slice(2),
                 uri: uri,
                 line: line,
-                content: lineContent.trim(),
+                content: lineContent,
                 groupId: groupId,
                 matchText: matchText
             };
@@ -151,8 +184,8 @@ export class LogBookmarkService implements vscode.Disposable {
         const groupId = Date.now().toString();
 
         for (const line of lines) {
-            // Check if already exists
-            if (list.some(b => b.line === line && currentActiveIds.has(b.id))) {
+            // Check if EXACT exists
+            if (list.some(b => b.line === line && currentActiveIds.has(b.id) && b.matchText === matchText)) {
                 continue;
             }
 
@@ -161,7 +194,7 @@ export class LogBookmarkService implements vscode.Disposable {
                 id: Date.now().toString() + Math.random().toString().slice(2),
                 uri: uri,
                 line: line,
-                content: lineContent.trim(),
+                content: lineContent,
                 groupId: groupId,
                 matchText: matchText
             };

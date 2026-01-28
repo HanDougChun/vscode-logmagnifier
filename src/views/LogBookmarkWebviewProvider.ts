@@ -235,44 +235,105 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
             const lineCount = (this._bookmarkService as any).getFileActiveLinesCount(uriStr);
             const groupCount = (this._bookmarkService as any).getFileHistoryGroupsCount(uriStr);
 
-            let fileLines = '';
+            // Group items by line
+            const lineItemsMap = new Map<number, typeof items>();
             for (const item of items) {
-                if (!item || !item.id) {
-                    continue;
+                const line = item.line || 0;
+                if (!lineItemsMap.has(line)) {
+                    lineItemsMap.set(line, []);
                 }
-                const paddedLine = ((item.line || 0) + 1).toString();
-                const content = item.content || '';
-                let safeContent = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                lineItemsMap.get(line)!.push(item);
+            }
 
-                // Underline matchText if present
-                if (item.matchText) {
-                    const safeMatchText = item.matchText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                    if (safeMatchText) {
-                        try {
-                            // Escape special regex characters in safeMatchText
-                            const escapedMatch = safeMatchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                            const regex = new RegExp(escapedMatch, 'gi');
-                            safeContent = safeContent.replace(regex, (match: string) => `<u class="match-highlight">${match}</u>`);
-                        } catch (e) {
-                            // Fallback if regex fails
+            const sortedLines = Array.from(lineItemsMap.keys()).sort((a, b) => a - b);
+
+            let fileLines = '';
+            for (const line of sortedLines) {
+                const lineItems = lineItemsMap.get(line)!;
+                if (lineItems.length === 0) continue;
+
+                // Use the first item for basic line info
+                const primaryItem = lineItems[0];
+                const paddedLine = ((primaryItem.line || 0) + 1).toString();
+                const content = primaryItem.content || '';
+
+                // Collect all match texts for this line
+                const uniqueMatchTexts = new Set<string>();
+                lineItems.forEach(item => {
+                    if (item.matchText) uniqueMatchTexts.add(item.matchText);
+                });
+
+                let safeContent = content; // Start with raw content
+
+                // Combined highlighting
+                if (uniqueMatchTexts.size > 0) {
+                    // Create a combined regex: (match1|match2|...)
+                    // Escape each match text
+                    const escapedMatches = Array.from(uniqueMatchTexts).map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+                    // distinct matching logic handled by simple joining?
+                    // Be careful about overlapping matches. Detailed tokenization is better but complex.
+                    // Simple approach: Construct one regex.
+                    // Sort by length destending to match longest first (e.g. "Error" vs "Error Code")
+                    escapedMatches.sort((a, b) => b.length - a.length);
+
+                    const combinedPattern = escapedMatches.join('|');
+
+                    try {
+                        const regex = new RegExp(combinedPattern, 'gi');
+
+                        const parts: string[] = [];
+                        let lastIndex = 0;
+                        let match: RegExpExecArray | null;
+
+                        while ((match = regex.exec(content)) !== null) {
+                            const before = content.substring(lastIndex, match.index);
+                            parts.push(before.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
+
+                            const matchedStr = match[0].replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                            parts.push(`<u class="match-highlight">${matchedStr}</u>`);
+
+                            lastIndex = regex.lastIndex;
                         }
+
+                        const remaining = content.substring(lastIndex);
+                        parts.push(remaining.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
+
+                        safeContent = parts.join('');
+
+                    } catch (e) {
+                        safeContent = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     }
+                } else {
+                    safeContent = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 }
 
-                const itemUriStr = item.uri ? item.uri.toString() : '';
+                const itemUriStr = primaryItem.uri ? primaryItem.uri.toString() : '';
 
-                itemsMap[item.id] = {
-                    id: item.id,
-                    line: item.line || 0,
+                // For the "Click" action, we probably want to just jump to the line. Using primaryItem ID works.
+                // For "Remove" action (X button), we should probably remove ALL bookmarks for this line.
+                // Store all IDs for this line
+                const allIds = lineItems.map(i => i.id);
+                // We'll pass the first ID to the map, but we might need a "removeLine" vs "removeItem" concept.
+                // Current UI calls `removeBookmark(id)`. 
+                // Let's make `removeBookmark` in webview accept an ID, and we'll implement a `removeLine` helper in JS
+                // or just iterate and remove all?
+                // Ideally, the "X" on the gutter implies "Clear this line".
+
+                // Let's modify the HTML generation to embed all IDs in the remove button call.
+                const allIdsStr = JSON.stringify(allIds).replace(/"/g, '&quot;');
+
+                // Use primary ID for jump
+                itemsMap[primaryItem.id] = {
+                    id: primaryItem.id, // This is just for jump lookup
+                    line: primaryItem.line || 0,
                     content: content,
-                    uriString: itemUriStr,
-                    matchText: item.matchText
+                    uriString: itemUriStr
                 };
 
                 fileLines += `
-                    <div class="log-line" onclick="jumpTo('${item.id}')">
+                    <div class="log-line" onclick="jumpTo('${primaryItem.id}')">
                         <div class="gutter">
-                            <span class="remove-btn" onclick="removeBookmark('${item.id}', event)">×</span>
+                            <span class="remove-btn" onclick="removeLineBookmars(${allIdsStr}, event)">×</span>
                             <span class="line-number">${paddedLine}</span>
                         </div>
                         <div class="line-content">${safeContent}</div>
@@ -623,6 +684,21 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                          if (event) {
                              event.stopPropagation();
                          }
+                    }
+                    function removeLineBookmars(ids, event) {
+                        if (ids && ids.length > 0) {
+                            // We can just iterate and send remove messages, or send a batch. 
+                            // Since we don't have batch remove message type yet, iterate.
+                            ids.forEach(id => {
+                                const item = itemsMap[id];
+                                if (item) {
+                                    vscode.postMessage({ type: 'remove', item: item });
+                                }
+                            });
+                        }
+                        if (event) {
+                            event.stopPropagation();
+                        }
                     }
                     function toggleFold(uriStr) {
                          const section = document.getElementById('section-' + uriStr);
