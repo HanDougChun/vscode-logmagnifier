@@ -716,6 +716,11 @@
         "icon": "$(plus)"
       },
       {
+        "command": "logmagnifier.runFilterGroup",
+        "title": "Run Filter Group",
+        "icon": "$(play)"
+      },
+      {
         "command": "logmagnifier.addRegexFilter",
         "title": "Add Regex Filter",
         "icon": "$(plus)"
@@ -1819,6 +1824,16 @@
           "command": "logmagnifier.deleteGroup",
           "when": "viewItem =~ /filterGroup.*/ && (view == logmagnifier-filters || view == logmagnifier-regex-filters)",
           "group": "3_edit@2"
+        },
+        {
+          "command": "logmagnifier.runFilterGroup",
+          "when": "view == logmagnifier-filters && viewItem =~ /filterGroup.*/",
+          "group": "inline@9"
+        },
+        {
+          "command": "logmagnifier.runFilterGroup",
+          "when": "view == logmagnifier-regex-filters && viewItem =~ /filterGroup.*/",
+          "group": "inline@9"
         },
         {
           "command": "logmagnifier.addFilter",

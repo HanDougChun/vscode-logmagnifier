@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as readline from 'readline';
 import * as os from 'os';
 import * as path from 'path';
-import { FilterGroup } from '../models/Filter';
+import { FilterGroup, FilterItem } from '../models/Filter';
 import { FileHierarchyService } from './FileHierarchyService';
 import { RegexUtils } from '../utils/RegexUtils';
 import { CircularBuffer } from '../utils/CircularBuffer';
@@ -20,17 +20,32 @@ const DEFAULT_MAX_LINE_COUNT = 999999;
 export class LogProcessor {
 
     public compileGroups(activeGroups: FilterGroup[]): CompiledGroup[] {
-        return activeGroups.map(group => ({
-            includes: group.filters
-                .filter(f => f.type === 'include' && f.isEnabled)
-                .map(f => ({
+        return activeGroups.map(group => {
+            // Compile filters for this group.
+            // We only consider filters that are explicitly enabled.
+
+            const filters = group.filters;
+            const effectiveIncludes: FilterItem[] = [];
+            const effectiveExcludes: FilterItem[] = [];
+
+            for (const f of filters) {
+                if (f.isEnabled) {
+                    if (f.type === 'include') {
+                        effectiveIncludes.push(f);
+                    } else if (f.type === 'exclude') {
+                        effectiveExcludes.push(f);
+                    }
+                }
+            }
+
+            return {
+                includes: effectiveIncludes.map(f => ({
                     regex: RegexUtils.create(f.keyword, !!f.isRegex, !!f.caseSensitive),
                     contextLine: f.contextLine ?? 0
                 })),
-            excludes: group.filters
-                .filter(f => f.type === 'exclude' && f.isEnabled)
-                .map(f => RegexUtils.create(f.keyword, !!f.isRegex, !!f.caseSensitive))
-        }));
+                excludes: effectiveExcludes.map(f => RegexUtils.create(f.keyword, !!f.isRegex, !!f.caseSensitive))
+            };
+        });
     }
 
     /**
@@ -60,9 +75,7 @@ export class LogProcessor {
             rl.on('error', (err) => {
                 reject(new Error(`Readline error while processing ${inputPath}: ${err.message}`));
             });
-
-            const activeGroups = filterGroups.filter(g => g.isEnabled);
-            const compiledGroups = this.compileGroups(activeGroups);
+            const compiledGroups = this.compileGroups(filterGroups);
 
             // Path and stream setup
             const tmpDir = os.tmpdir();
