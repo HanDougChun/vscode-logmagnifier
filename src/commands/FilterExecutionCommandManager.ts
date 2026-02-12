@@ -24,9 +24,12 @@ export class FilterExecutionCommandManager {
         private logger: Logger,
         private sourceMapService: SourceMapService,
         private wordTreeView: vscode.TreeView<FilterGroup | FilterItem>,
-        private regexTreeView: vscode.TreeView<FilterGroup | FilterItem>
+        private regexTreeView: vscode.TreeView<FilterGroup | FilterItem>,
+        registerCommands: boolean = true
     ) {
-        this.registerCommands();
+        if (registerCommands) {
+            this.registerCommands();
+        }
         // Initialize context key
         this.setPrependLineNumbersEnabled(false);
     }
@@ -36,7 +39,7 @@ export class FilterExecutionCommandManager {
         vscode.commands.executeCommand('setContext', Constants.ContextKeys.PrependLineNumbersEnabled, value);
     }
 
-    private async applyFilter(filterType?: 'word' | 'regex') {
+    private async applyFilter(filterType?: 'word' | 'regex', targetGroup?: FilterGroup) {
         if (this.isProcessing) {
             vscode.window.showWarningMessage(Constants.Messages.Warn.FilterAlreadyProcessing);
             return;
@@ -44,10 +47,17 @@ export class FilterExecutionCommandManager {
         this.isProcessing = true;
 
         try {
-            const activeGroups = this.filterManager.getGroups().filter(g => {
-                if (!g.isEnabled) {
-                    return false;
-                }
+            // 1. Select relevant groups (Target specific or All)
+            let candidateGroups = this.filterManager.getGroups();
+            if (targetGroup) {
+                // Specific Run: Use target group regardless of enabled state
+                candidateGroups = candidateGroups.filter(g => g.id === targetGroup.id);
+            } else {
+                // Global Apply: Use ONLY enabled groups
+                candidateGroups = candidateGroups.filter(g => g.isEnabled);
+            }
+
+            candidateGroups = candidateGroups.filter(g => {
                 if (filterType === 'word') {
                     return !g.isRegex;
                 }
@@ -55,6 +65,13 @@ export class FilterExecutionCommandManager {
                     return g.isRegex;
                 }
                 return true;
+            });
+
+            // 3. Validate "Effective" Groups
+            const activeGroups = candidateGroups.filter(g => {
+                // Only keep groups that have at least one enabled filter.
+                // The group's own enabled state is ignored.
+                return g.filters.some(f => f.isEnabled);
             });
 
             if (activeGroups.length === 0) {
@@ -408,6 +425,10 @@ export class FilterExecutionCommandManager {
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ApplyWordFilter, () => this.applyFilter('word')));
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.runFilterGroup', (group: FilterGroup) => {
+            const type = group.isRegex ? 'regex' : 'word';
+            this.applyFilter(type, group);
+        }));
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ApplyRegexFilter, () => this.applyFilter('regex')));
     }
 }
